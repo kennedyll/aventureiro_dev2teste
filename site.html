@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caderno de Campanha — Produtividade RPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+</head>
+<body style="margin:0;">
+
+<style>
+:root{
+  --paper:#F2F7FC;
+  --card:#FFFFFF;
+  --card-soft:#EAF3FB;
+  --ink:#1E2D3D;
+  --ink-soft:#57708A;
+  --ink-faint:#93A7BB;
+  --line: rgba(30,45,61,0.09);
+  --line-strong: rgba(30,45,61,0.15);
+
+  --estudo:#2E6FA8;    --estudo-bg:#E3EFFA;
+  --leitura:#5D6BBE;   --leitura-bg:#EAECFA;
+  --boxe:#2E93A6;      --boxe-bg:#E1F3F6;
+  --academia:#356089;  --academia-bg:#E3ECF5;
+  --corrida:#2F9BCF;   --corrida-bg:#E2F4FC;
+  --gold:#2F7FE0;      --gold-bg:#E5F0FE;
+  --danger:#C0392B;    --danger-bg:#FBEAE7;
+
+  --radius:16px;
+  --radius-sm:10px;
+  --shadow-sm: 0 1px 2px rgba(30,45,61,0.06), 0 1px 1px rgba(30,45,61,0.04);
+  --shadow-md: 0 6px 18px -8px rgba(30,45,61,0.20), 0 2px 6px -2px rgba(30,45,61,0.10);
+}
+*{box-sizing:border-box;}
+html, body{ height:100%; margin:0; }
+body{
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,0.9), transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(207,226,247,0.8), transparent 55%),
+    linear-gradient(160deg, #C7DBF2 0%, #AFCBE9 55%, #9CBEE3 100%);
+  overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  padding:26px;
+}
+.rpg-root{
+  font-family:'Inter', system-ui, sans-serif;
+  color:var(--ink);
+  background:var(--paper);
+  width:100%; max-width:1360px; height:100%; max-height:960px;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  border-radius:26px;
+  box-shadow:
+    0 50px 100px -30px rgba(15,35,60,0.45),
+    0 18px 40px -20px rgba(15,35,60,0.30),
+    0 0 0 1px rgba(255,255,255,0.5) inset;
+  position:relative;
+  transform:translateZ(0);
+}
+.display{ font-family:'Fraunces', Georgia, serif; }
+.mono{ font-family:'JetBrains Mono', monospace; }
+svg.ic{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; display:block; }
+svg.ic.filled{ fill:currentColor; stroke:none; }
+
+@media (max-width:860px){
+  body{ padding:0; }
+  .rpg-root{ max-width:100%; max-height:100%; height:100%; border-radius:0; box-shadow:none; }
+}
+
+/* ---------------- layout shell ---------------- */
+.shell{ display:flex; min-height:100%; }
+
+.sidebar{
+  width:216px; flex:none; background:var(--card-soft);
+  border-right:1px solid var(--line-strong);
+  padding:22px 14px; position:sticky; top:0; align-self:flex-start; height:100%; overflow-y:auto;
+  display:flex; flex-direction:column; gap:22px;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:0 8px; }
+.brand .mark{
+  width:34px; height:34px; border-radius:10px; background:var(--ink); color:var(--paper);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 0 rgba(9,17,26,0.3), 0 5px 10px -3px rgba(9,17,26,0.35);
+}
+.brand .name{ font-family:'Fraunces'; font-weight:600; font-size:15.5px; line-height:1.15; }
+.brand .sub{ font-size:10.5px; color:var(--ink-faint); letter-spacing:0.04em; }
+
+.level-card{
+  background:var(--card); border:1px solid var(--line-strong); border-radius:var(--radius);
+  padding:14px; box-shadow:var(--shadow-sm);
+  transform-style:preserve-3d; will-change:transform; transition:transform .18s ease, box-shadow .18s ease;
+}
+.level-card:hover{ box-shadow:var(--shadow-md); }
+.ring-wrap{ display:flex; align-items:center; gap:12px; }
+.ring{ position:relative; width:56px; height:56px; flex:none; }
+.ring svg{ transform:rotate(-90deg); }
+.ring .lvl{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; }
+.ring .lvl b{ font-family:'Fraunces'; font-size:19px; line-height:1; }
+.ring .lvl span{ font-size:7.5px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; }
+.level-title{ font-family:'Fraunces'; font-weight:600; font-size:13.5px; }
+.level-xp{ font-size:10.5px; color:var(--ink-faint); font-family:'JetBrains Mono'; }
+
+.nav{ display:flex; flex-direction:column; gap:3px; }
+.nav-btn{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--radius-sm);
+  border:none; background:transparent; color:var(--ink-soft); font-size:13.5px; font-weight:500;
+  cursor:pointer; text-align:left; width:100%; transition:background .15s ease, color .15s ease;
+}
+.nav-btn:hover{ background:rgba(30,45,61,0.05); color:var(--ink); }
+.nav-btn.active{ background:var(--ink); color:var(--paper); }
+.nav-btn .ic{ opacity:0.85; }
+
+.streaks-mini{ display:flex; flex-direction:column; gap:6px; }
+.streaks-mini .row{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ink-soft); }
+.streaks-mini .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.streaks-mini b{ color:var(--ink); font-family:'JetBrains Mono'; }
+
+.sidebar-foot{ margin-top:auto; }
+.reset-link{ background:none;border:none;color:var(--ink-faint); font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+
+/* mobile topbar + bottom nav */
+.mobile-top{ display:none; }
+.mobile-nav{ display:none; }
+
+/* ---------------- main content ---------------- */
+.main{ flex:1; min-width:0; padding:30px 34px 80px; max-width:820px; }
+.page-head{ margin-bottom:22px; }
+.page-head .eyebrow{ font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; }
+.page-head h1{ font-family:'Fraunces'; font-weight:600; font-size:26px; margin:2px 0 0; }
+.page-head p{ color:var(--ink-soft); font-size:14px; margin:6px 0 0; max-width:56ch; }
+
+.card{
+  background:var(--card); border:1px solid var(--line-strong); border-radius:var(--radius);
+  padding:20px; margin-bottom:16px; box-shadow:var(--shadow-sm);
+  transition: transform .22s cubic-bezier(.2,.8,.3,1), box-shadow .22s ease;
+}
+.card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); }
+.card h2{ font-family:'Fraunces'; font-weight:600; font-size:17px; margin:0 0 4px; display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+.card h3{ font-family:'Fraunces'; font-weight:600; font-size:15px; margin:18px 0 8px; }
+.muted{ color:var(--ink-soft); font-size:13px; }
+.faint{ color:var(--ink-faint); font-size:12px; }
+
+/* banner */
+.banner{
+  display:flex; align-items:center; gap:10px; background:var(--gold-bg); color:#1C4E8A;
+  border:1px solid rgba(184,145,43,0.35); border-radius:var(--radius-sm); padding:11px 14px; margin-bottom:16px;
+  font-size:13.5px; font-weight:500; animation: pop .4s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes pop{ from{opacity:0; transform:translateY(-6px) scale(0.97);} to{opacity:1; transform:none;} }
+.banner.warn{ background:var(--danger-bg); color:#8A2E22; border-color:rgba(178,58,46,0.35); }
+.banner .close{ margin-left:auto; background:none; border:none; cursor:pointer; color:inherit; opacity:0.6; padding:2px;}
+.banner .close:hover{ opacity:1; }
+.rule-note{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--danger); background:var(--danger-bg);
+  border-radius:999px; padding:5px 11px; margin-top:8px; width:fit-content; }
+
+/* quest rows */
+.quest-list{ display:flex; flex-direction:column; }
+.quest{
+  display:flex; align-items:center; gap:13px; padding:12px 6px; border-bottom:1px solid var(--line);
+  transition:background .15s ease;
+}
+.quest:last-child{ border-bottom:none; }
+.quest:hover{ background:rgba(30,45,61,0.025); }
+
+.checkbox{
+  width:24px; height:24px; border-radius:8px; border:2px solid var(--line-strong); flex:none;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative;
+  transition:background .18s ease, border-color .18s ease, transform .12s ease;
+  background:var(--card);
+}
+.checkbox:hover{ border-color:var(--ink-faint); }
+.checkbox.done{ background:var(--estudo); border-color:var(--estudo); box-shadow:0 2px 5px -1px rgba(46,111,168,0.5); animation:checkPop .35s cubic-bezier(.3,1.6,.4,1); }
+@keyframes checkPop{ 0%{ transform:scale(0.75); } 60%{ transform:scale(1.12); } 100%{ transform:scale(1); } }
+.checkbox:active{ transform:scale(0.9); }
+.checkbox svg{ width:14px; height:14px; stroke:#fff; stroke-width:2.6; fill:none; stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:20; stroke-dashoffset:20; transition:stroke-dashoffset .25s ease .05s; }
+.checkbox.done svg{ stroke-dashoffset:0; }
+
+.q-icon{
+  width:32px; height:32px; border-radius:9px; flex:none; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 0 rgba(9,17,26,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  transition:transform .2s cubic-bezier(.2,1.4,.4,1);
+}
+.quest:hover .q-icon{ transform:translateY(-1px) scale(1.05); }
+.q-body{ flex:1; min-width:0; }
+.q-name{ font-size:14px; font-weight:500; transition:color .15s ease; }
+.q-name.done{ color:var(--ink-faint); text-decoration:line-through; text-decoration-color:var(--ink-faint); }
+.q-xp{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--ink-faint); }
+.q-del{ background:none;border:none;color:var(--ink-faint); cursor:pointer; padding:4px; border-radius:6px; opacity:0; transition:opacity .15s;}
+.quest:hover .q-del{ opacity:1; }
+.q-del:hover{ color:var(--boxe); background:var(--boxe-bg); }
+
+.empty{ font-size:13px; color:var(--ink-faint); font-style:italic; padding:14px 4px; text-align:center; }
+
+/* forms */
+.inline-form{ display:flex; gap:8px; margin-top:14px; }
+input.field, textarea.field{
+  font-family:'Inter'; font-size:13.5px; padding:10px 12px; border:1px solid var(--line-strong);
+  border-radius:var(--radius-sm); background:var(--card-soft); color:var(--ink); width:100%;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+input.field:focus, textarea.field:focus{ outline:none; border-color:var(--ink-soft); box-shadow:0 0 0 3px rgba(30,45,61,0.08); }
+textarea.field{ min-height:90px; resize:vertical; }
+.btn{
+  font-family:'Inter'; font-weight:600; font-size:13.5px; cursor:pointer; border-radius:var(--radius-sm);
+  border:1px solid var(--ink); background:var(--ink); color:var(--paper); padding:10px 16px; white-space:nowrap;
+  transition:background .15s ease, transform .12s ease, box-shadow .12s ease;
+  box-shadow:0 3px 0 rgba(9,17,26,0.35), 0 5px 10px -4px rgba(9,17,26,0.35);
+  position:relative; top:0;
+}
+.btn:hover{ background:#2E4258; transform:translateY(-1px); box-shadow:0 4px 0 rgba(9,17,26,0.35), 0 8px 14px -4px rgba(9,17,26,0.4); }
+.btn:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(9,17,26,0.35), 0 2px 6px -2px rgba(9,17,26,0.4); }
+.btn.ghost{ background:transparent; color:var(--ink); box-shadow:none; }
+.btn.ghost:hover{ background:rgba(30,45,61,0.06); transform:none; box-shadow:none; }
+.btn.block{ width:100%; }
+
+/* --------------- dashboard hero --------------- */
+.hero{
+  background:var(--card); border:1px solid var(--line-strong); border-radius:var(--radius);
+  padding:22px; margin-bottom:16px; display:flex; align-items:center; gap:22px; box-shadow:var(--shadow-sm);
+  flex-wrap:wrap;
+  transform-style:preserve-3d; will-change:transform; transition:transform .18s ease, box-shadow .18s ease;
+}
+.hero:hover{ box-shadow:var(--shadow-md); }
+.hero-ring{ position:relative; width:98px; height:98px; flex:none; }
+.hero-ring svg{ transform:rotate(-90deg); }
+.hero-ring .lvl{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.hero-ring .lvl b{ font-family:'Fraunces'; font-size:32px; line-height:1; }
+.hero-ring .lvl span{ font-size:9px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; }
+.hero-info{ flex:1; min-width:220px; }
+.hero-info .title{ font-family:'Fraunces'; font-weight:600; font-size:19px; }
+.hero-info .xp{ font-family:'JetBrains Mono'; font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+.xpbar-track{ height:8px; background:rgba(30,45,61,0.09); border-radius:5px; overflow:hidden; margin-top:8px; width:100%; max-width:340px;}
+.xpbar-fill{ height:100%; background:linear-gradient(90deg,var(--gold),#7FB3EF); transition:width .5s ease; border-radius:5px;}
+.streak-chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.streak-chip{
+  display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:11.5px; font-weight:600;
+}
+
+/* --------------- study track --------------- */
+.timeline{ position:relative; padding-left:38px; }
+.timeline::before{ content:''; position:absolute; left:15px; top:6px; bottom:6px; width:2px; background:var(--line-strong); }
+.phase{ position:relative; margin-bottom:8px; }
+.phase-node{
+  position:absolute; left:-38px; top:14px; width:32px; height:32px; border-radius:50%;
+  border:2px solid var(--estudo); background:var(--card); color:var(--estudo);
+  display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-size:12px; font-weight:700;
+  z-index:1;
+}
+.phase-node.complete{ background:var(--estudo); color:#fff; }
+.phase-head{
+  display:flex; align-items:center; gap:12px; padding:12px 14px; cursor:pointer; border-radius:var(--radius-sm);
+  border:1px solid var(--line-strong); background:var(--card-soft); transition:background .15s ease;
+}
+.phase-head:hover{ background:var(--card); }
+.phase-title{ font-family:'Fraunces'; font-weight:600; font-size:15px; flex:1; }
+.phase-dur{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--ink-faint); }
+.phase-pct{ font-family:'JetBrains Mono'; font-size:11px; color:var(--estudo); font-weight:700; width:34px; text-align:right;}
+.chevron{ transition:transform .2s ease; color:var(--ink-faint); }
+.chevron.open{ transform:rotate(180deg); }
+.phase-body{ overflow:hidden; max-height:0; transition:max-height .3s ease; }
+.phase-body.open{ max-height:900px; }
+.phase-body-inner{ padding:10px 4px 6px 4px; }
+.project-note{
+  margin-top:8px; padding:11px 13px; background:var(--estudo-bg); border-radius:var(--radius-sm);
+  font-size:13px; color:#1F4E75; display:flex; gap:8px; align-items:flex-start;
+}
+
+.bonus-group{ margin-bottom:4px; }
+.bonus-group h4{ font-size:12.5px; font-weight:700; color:var(--ink-soft); margin:14px 0 7px; text-transform:uppercase; letter-spacing:0.03em;}
+.chip-list{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{
+  border:1px solid var(--line-strong); padding:7px 12px; border-radius:999px; font-size:12.5px; cursor:pointer;
+  display:flex; align-items:center; gap:7px; background:var(--card-soft); transition:all .15s ease; color:var(--ink-soft);
+  font-family:inherit;
+}
+.chip:hover{ border-color:var(--ink-faint); }
+.chip.done{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.chip svg{ width:13px; height:13px; }
+
+/* --------------- skills --------------- */
+.skill-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.skill{
+  border:1px solid var(--line-strong); border-radius:var(--radius); padding:16px; background:var(--card);
+  position:relative; overflow:hidden; transition:box-shadow .18s ease;
+  transform-style:preserve-3d; will-change:transform;
+}
+.skill.unlocked{ box-shadow:0 0 0 2px var(--gold) inset; }
+.skill:hover{ box-shadow:var(--shadow-md), 0 0 0 2px var(--gold) inset; }
+.skill.locked{ background:var(--card-soft); }
+.skill.locked .sk-icon{ filter:grayscale(1); opacity:0.5; }
+.skill.locked .sk-name, .skill.locked .sk-desc{ color:var(--ink-faint); }
+.sk-icon{ width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+.sk-name{ font-family:'Fraunces'; font-weight:600; font-size:14.5px; }
+.sk-desc{ font-size:12px; color:var(--ink-soft); margin:4px 0 10px; }
+.sk-track{ height:5px; background:rgba(30,45,61,0.09); border-radius:4px; overflow:hidden; }
+.sk-fill{ height:100%; border-radius:4px; }
+.sk-prog{ font-family:'JetBrains Mono'; font-size:10px; color:var(--ink-faint); margin-top:5px; }
+.sk-badge{ position:absolute; top:12px; right:12px; color:var(--gold); }
+
+/* --------------- diary --------------- */
+.diary-entry{ padding:12px 4px; border-bottom:1px solid var(--line); display:flex; gap:12px; }
+
+/* --------------- comunidade --------------- */
+.friend-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  padding:12px 6px; border-bottom:1px solid var(--line);
+}
+.friend-row:last-child{ border-bottom:none; }
+.friend-info{ flex:1; min-width:180px; }
+.mini-chip-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.mini-chip{
+  display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600;
+  padding:3px 8px; border-radius:999px;
+}
+.mini-chip svg{ width:11px; height:11px; }
+.cheer-panel{ display:flex; flex-wrap:wrap; gap:7px; padding:0 6px 12px; }
+.cheer-panel .chip{ font-size:12px; }
+code.mono{ background:var(--card-soft); border:1px solid var(--line-strong); border-radius:5px; padding:1px 6px; }
+.rank-badge{
+  width:28px; height:28px; border-radius:50%; border:2px solid var(--ink-faint); flex:none;
+  display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:12px;
+}
+.diary-entry:last-child{ border-bottom:none; }
+.diary-entry .d-icon{ width:30px; height:30px; border-radius:9px; background:var(--leitura-bg); color:var(--leitura); flex:none; display:flex; align-items:center; justify-content:center; }
+.diary-entry .d-date{ font-family:'JetBrains Mono'; font-size:10px; color:var(--ink-faint); margin-bottom:3px; }
+.diary-entry p{ margin:0; white-space:pre-wrap; font-size:13.5px; line-height:1.55; }
+
+.loading{ display:flex; align-items:center; justify-content:center; height:100vh; font-family:'JetBrains Mono'; color:var(--ink-faint); font-size:13px; gap:10px;}
+.spin{ width:16px; height:16px; border:2px solid var(--line-strong); border-top-color:var(--ink-soft); border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+@media (max-width:860px){
+  .sidebar{ display:none; }
+  .mobile-top{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 16px; position:sticky; top:0; z-index:5; background:var(--paper);
+    border-bottom:1px solid var(--line-strong);
+  }
+  .mobile-top .brand{ padding:0; }
+  .mobile-top .ring{ width:40px; height:40px; }
+  .mobile-top .ring .lvl b{ font-size:14px; }
+  .main{ padding:18px 16px 90px; max-width:none; }
+  .mobile-nav{
+    display:flex; position:fixed; bottom:0; left:0; right:0; background:var(--card);
+    border-top:1px solid var(--line-strong); z-index:6; padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .mobile-nav button{
+    flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:6px 2px; color:var(--ink-faint); font-size:9.5px; font-weight:600; cursor:pointer;
+  }
+  .mobile-nav button.active{ color:var(--ink); }
+  .hero{ flex-direction:column; align-items:flex-start; }
+}
+</style>
+
+<div class="rpg-root">
+<div id="app"><div class="loading"><span class="spin"></span> carregando sua jornada…</div></div>
+</div>
+
+<script>
+(function(){
+
+/* ================= ÍCONES ================= */
+function icon(name, extra){
+  var cls = 'ic' + (extra ? ' '+extra : '');
+  var map = {
+    book: '<path d="M4 5.5C4 4.67 4.67 4 5.5 4H11v16H5.5C4.67 20 4 19.33 4 18.5z"/><path d="M20 5.5C20 4.67 19.33 4 18.5 4H13v16h5.5c.83 0 1.5-.67 1.5-1.5z"/>',
+    bookmark: '<path d="M6 4h12v16l-6-4-6 4z"/>',
+    glove: '<circle cx="12" cy="14" r="6.4"/><path d="M9.5 8V4.5A2.5 2.5 0 0 1 12 2v0a2.5 2.5 0 0 1 2.5 2.5V8"/>',
+    dumbbell: '<rect x="1.5" y="10" width="2.6" height="4" rx="0.6"/><rect x="19.9" y="10" width="2.6" height="4" rx="0.6"/><rect x="5.3" y="8.3" width="2.8" height="7.4" rx="0.8"/><rect x="15.9" y="8.3" width="2.8" height="7.4" rx="0.8"/><line x1="8.5" y1="12" x2="15.5" y2="12"/>',
+    run: '<circle cx="14.5" cy="4.3" r="1.9"/><path d="M13.5 8l-3 3.6 3 2 -1.2 6.4"/><path d="M9.6 12.6l-4 2.2"/><path d="M12.8 11.5l3.6 2.6 -1 5.4"/>',
+    briefcase: '<rect x="3" y="7.5" width="18" height="11.5" rx="2"/><path d="M8.3 7.5V6a2 2 0 0 1 2-2h3.4a2 2 0 0 1 2 2v1.5"/><line x1="3" y1="12.5" x2="21" y2="12.5"/>',
+    feather: '<path d="M20 4c-5 0-14 3-14 12 0 2 1 4 1 4l13-13"/><path d="M7 20s2-1 4-3"/>',
+    star: '<path d="M12 3l2.6 5.9 6.4.6-4.9 4.3 1.5 6.3L12 16.9 6.4 20.1l1.5-6.3-4.9-4.3 6.4-.6z"/>',
+    check2: '<rect x="3.5" y="4" width="17" height="17" rx="3.5"/><path d="M7.5 12.2l3 3 6-6.4"/>',
+    home: '<path d="M4 11.5l8-7 8 7"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-6h4v6"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    trash: '<path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/>',
+    chevron: '<path d="M6 9l6 6 6-6"/>',
+    lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    fire: '<path d="M12 21c4 0 6.5-2.6 6.5-6 0-3-2-4.6-2.7-6.6-.5 1.7-1.5 2.6-1.5 2.6C14.8 8 13.6 5.4 11 3c.4 3-1.4 4.8-2.9 6.6C6.7 11.4 5.5 13 5.5 15c0 3.4 2.5 6 6.5 6z"/>',
+    trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H5a3 3 0 0 0 3 4"/><path d="M16 5h3a3 3 0 0 1-3 4"/><path d="M10 13v3h4v-3"/><path d="M8 20h8"/><path d="M12 16v4"/>',
+    users:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6"/><circle cx="17.5" cy="9.3" r="2.4"/><path d="M15 20c0-2.6 1.2-4.8 3.4-5.6"/>',
+    send:'<path d="M4 12l16-8-6 16-3-6-7-2z"/>',
+    copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
+  };
+  return '<svg class="'+cls+'" viewBox="0 0 24 24">'+(map[name]||'')+'</svg>';
+}
+
+/* ================= DADOS ESTÁTICOS ================= */
+
+var WEEKDAYS = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+
+var STUDY_PHASES = [
+  { title:'Fundamentos', dur:'4–6 semanas',
+    tasks:[
+      'Curso do Guanabara (lógica, variáveis, condicionais, laços, vetores, POO introdutória)',
+      'Resolver 30–50 exercícios no Beecrowd (categoria Iniciante)',
+      'Praticar Strings, arrays e matrizes até resolver sem consultar'
+    ],
+    project:'Calculadora de IMC ou conversor de unidades via terminal.' },
+  { title:'Orientação a Objetos', dur:'4–6 semanas',
+    tasks:[
+      'Classes, objetos, atributos e métodos (revisão + aprofundamento)',
+      'Encapsulamento, herança, polimorfismo, interfaces, classes abstratas',
+      'Composição vs herança — quando usar cada uma',
+      'Introdução a SOLID (pelo menos S, O e D)',
+      'Padrões de projeto básicos: Singleton, Factory, Strategy'
+    ],
+    project:'Sistema de gerenciamento de biblioteca ou locadora, com hierarquia de classes.' },
+  { title:'Ferramentas Essenciais', dur:'2–3 semanas',
+    tasks:[
+      'Git e GitHub: commit, branch, merge, pull request',
+      'Collections Framework: List, Set, Map — quando usar cada uma',
+      'Tratamento de exceções: try/catch, exceções customizadas',
+      'Streams e Lambdas (Java 8+): filter, map, reduce, Optional'
+    ],
+    project:'Refatorar o sistema de biblioteca com Streams, coleções adequadas e exceções customizadas.' },
+  { title:'Persistência e Banco de Dados', dur:'3–4 semanas',
+    tasks:[
+      'SQL básico: SELECT, JOIN, INSERT, UPDATE, DELETE',
+      'JDBC — conexão manual com banco',
+      'Introdução a ORM: conceito e por que existe',
+      'Maven ou Gradle (gerenciamento de dependências e build)'
+    ],
+    project:'Sistema de controle de estoque com CRUD real em MySQL/PostgreSQL.' },
+  { title:'Spring Boot', dur:'6–8 semanas',
+    tasks:[
+      'Spring Core: Inversão de Controle e Injeção de Dependência',
+      'Spring Web: criação de APIs REST (Controllers, endpoints)',
+      'Spring Data JPA: persistência sem SQL manual',
+      'Validações, tratamento de erros em API, DTOs',
+      'Autenticação básica (Spring Security introdutório)'
+    ],
+    project:'API de gestão financeira pessoal ou de agendamento de serviços, documentada com Swagger/OpenAPI.' },
+  { title:'Consolidação e Portfólio', dur:'contínua',
+    tasks:[
+      'Testes automatizados (JUnit, Mockito)',
+      'Boas práticas de arquitetura (Controller, Service, Repository)',
+      'Deploy de uma aplicação (Railway, Render ou VPS simples)',
+      'Montar 2–3 projetos completos para portfólio no GitHub'
+    ],
+    project:'Projeto carro-chefe: e-commerce simplificado ou gestão de tarefas em equipe, com testes e deploy.' }
+];
+
+var BONUS_TRACK = [
+  { section:'Internet & Fundamentos', items:['Como a internet funciona','O que é HTTP','DNS e domínios','O que é hosting'] },
+  { section:'Controle de Versão', items:['Git na prática','GitHub / GitLab / Bitbucket'] },
+  { section:'Bancos de Dados', items:['Relacionais (PostgreSQL/MySQL)','NoSQL (MongoDB, Redis)','ORMs','Normalização & ACID','Índices e Sharding'] },
+  { section:'APIs', items:['REST','GraphQL','gRPC','OpenAPI / Swagger','HATEOAS'] },
+  { section:'Cache & Performance', items:['CDN','Cache no servidor (Redis/Memcached)','Problema N+1','Profiling de performance'] },
+  { section:'Segurança', items:['HTTPS & SSL/TLS','OWASP Top 10','CORS','Hashing (bcrypt/scrypt)','Autenticação (JWT/OAuth)'] },
+  { section:'Testes & CI/CD', items:['Testes unitários','Testes de integração','Pipeline de CI/CD'] },
+  { section:'Arquitetura & Padrões', items:['GOF Design Patterns','Monólito vs Microsserviços','Domain-Driven Design','Twelve-Factor Apps'] },
+  { section:'Escalabilidade & Infra', items:['Docker & Kubernetes','Mensageria (Kafka/RabbitMQ)','WebSockets','Observabilidade (logs, métricas)'] }
+];
+
+var DEFAULT_EMPLOYABILITY = [
+  'Criar/organizar perfil completo no LinkedIn',
+  'Escrever resumo profissional (About) no LinkedIn',
+  'Organizar o perfil do GitHub com README de apresentação',
+  'Publicar 3 projetos de portfólio no GitHub, com README detalhado',
+  'Montar currículo atualizado (1 página)',
+  'Conectar-se com 10 profissionais da área no LinkedIn',
+  'Treinar respostas para perguntas comportamentais',
+  'Simular uma entrevista técnica (mock interview)',
+  'Aplicar para 5 vagas de nível júnior'
+];
+
+var SKILL_DEFS = [
+  { id:'estudo_t0', name:'Fagulha do Saber', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 2 dias seguidos.', need:2, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t1', name:'Primeira Vela', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 3 dias seguidos.', need:3, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t2', name:'Constância de Ferro', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 5 dias seguidos.', need:5, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t3', name:'Disciplina de Aço', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 7 dias seguidos.', need:7, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t4', name:'Ritual Diário', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 10 dias seguidos.', need:10, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t5', name:'Rotina Inabalável', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 14 dias seguidos.', need:14, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t6', name:'Fluxo Constante', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 21 dias seguidos.', need:21, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t7', name:'Forja do Conhecimento', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 30 dias seguidos.', need:30, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t8', name:'Mente Afiada', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 45 dias seguidos.', need:45, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t9', name:'Sabedoria Crescente', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 60 dias seguidos.', need:60, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t10', name:'Chama Eterna', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 75 dias seguidos.', need:75, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t11', name:'Mente Eterna', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 90 dias seguidos.', need:90, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t12', name:'Guardião do Saber', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 120 dias seguidos.', need:120, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t13', name:'Oráculo em Formação', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 150 dias seguidos.', need:150, prog:function(s){return streakFor(s,'estudo');} },
+  { id:'estudo_t14', name:'Avatar do Conhecimento', color:'estudo', icon:'book', group:'Estudo',
+    desc:'Estude 180 dias seguidos.', need:180, prog:function(s){return streakFor(s,'estudo');} },
+
+  { id:'leitura_t0', name:'Primeira Página', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 2 dias seguidos.', need:2, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t1', name:'Marcador de Página', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 3 dias seguidos.', need:3, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t2', name:'Mente Aberta', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 5 dias seguidos.', need:5, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t3', name:'Leitor Assíduo', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 7 dias seguidos.', need:7, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t4', name:'Ritual da Leitura', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 10 dias seguidos.', need:10, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t5', name:'Devorador de Capítulos', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 14 dias seguidos.', need:14, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t6', name:'Fluxo de Páginas', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 21 dias seguidos.', need:21, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t7', name:'Biblioteca Viva', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 30 dias seguidos.', need:30, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t8', name:'Colecionador de Histórias', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 45 dias seguidos.', need:45, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t9', name:'Sábio em Formação', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 60 dias seguidos.', need:60, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t10', name:'Chama da Curiosidade', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 75 dias seguidos.', need:75, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t11', name:'Sábio Incansável', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 90 dias seguidos.', need:90, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t12', name:'Guardião dos Pergaminhos', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 120 dias seguidos.', need:120, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t13', name:'Oráculo das Palavras', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 150 dias seguidos.', need:150, prog:function(s){return streakFor(s,'leitura');} },
+  { id:'leitura_t14', name:'Avatar da Sabedoria', color:'leitura', icon:'bookmark', group:'Leitura',
+    desc:'Leia 180 dias seguidos.', need:180, prog:function(s){return streakFor(s,'leitura');} },
+
+  { id:'boxe_t0', name:'Primeiro Soco', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 1 sessões de boxe.', need:1, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t1', name:'Punho Desperto', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 2 sessões de boxe.', need:2, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t2', name:'Punho Forjado', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 4 sessões de boxe.', need:4, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t3', name:'Golpe Certeiro', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 6 sessões de boxe.', need:6, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t4', name:'Reflexo Rápido', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 8 sessões de boxe.', need:8, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t5', name:'Guarda de Ferro', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 12 sessões de boxe.', need:12, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t6', name:'Combinação Fluida', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 16 sessões de boxe.', need:16, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t7', name:'Fera do Ringue', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 20 sessões de boxe.', need:20, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t8', name:'Nocaute Técnico', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 25 sessões de boxe.', need:25, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t9', name:'Punho Lendário', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 30 sessões de boxe.', need:30, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t10', name:'Mestre do Jab', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 40 sessões de boxe.', need:40, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t11', name:'Campeão Invicto', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 50 sessões de boxe.', need:50, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t12', name:'Terror do Ringue', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 65 sessões de boxe.', need:65, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t13', name:'Lenda do Boxe', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 80 sessões de boxe.', need:80, prog:function(s){return countDone(s,'boxe');} },
+  { id:'boxe_t14', name:'Avatar do Combate', color:'boxe', icon:'glove', group:'Boxe',
+    desc:'Complete 100 sessões de boxe.', need:100, prog:function(s){return countDone(s,'boxe');} },
+
+  { id:'academia_t0', name:'Primeiro Treino', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 1 sessões de academia.', need:1, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t1', name:'Suor Inicial', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 3 sessões de academia.', need:3, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t2', name:'Corpo de Aço', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 6 sessões de academia.', need:6, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t3', name:'Disciplina de Ferro', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 9 sessões de academia.', need:9, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t4', name:'Força Crescente', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 12 sessões de academia.', need:12, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t5', name:'Músculo de Titânio', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 18 sessões de academia.', need:18, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t6', name:'Resistência Forjada', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 24 sessões de academia.', need:24, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t7', name:'Força Bruta', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 32 sessões de academia.', need:32, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t8', name:'Colosso', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 40 sessões de academia.', need:40, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t9', name:'Máquina de Treino', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 50 sessões de academia.', need:50, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t10', name:'Hércules Moderno', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 65 sessões de academia.', need:65, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t11', name:'Titã da Academia', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 80 sessões de academia.', need:80, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t12', name:'Semideus do Ferro', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 100 sessões de academia.', need:100, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t13', name:'Lenda da Musculação', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 125 sessões de academia.', need:125, prog:function(s){return countDone(s,'academia');} },
+  { id:'academia_t14', name:'Avatar da Força', color:'academia', icon:'dumbbell', group:'Academia',
+    desc:'Complete 150 sessões de academia.', need:150, prog:function(s){return countDone(s,'academia');} },
+
+  { id:'corrida_t0', name:'Primeira Corrida', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 1 corridas de sábado.', need:1, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t1', name:'Passo Firme', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 2 corridas de sábado.', need:2, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t2', name:'Fôlego Longo', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 4 corridas de sábado.', need:4, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t3', name:'Vento Constante', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 6 corridas de sábado.', need:6, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t4', name:'Ritmo Constante', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 8 corridas de sábado.', need:8, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t5', name:'Maratonista Nato', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 12 corridas de sábado.', need:12, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t6', name:'Passada Firme', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 16 corridas de sábado.', need:16, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t7', name:'Pernas de Aço', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 20 corridas de sábado.', need:20, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t8', name:'Fôlego Infinito', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 25 corridas de sábado.', need:25, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t9', name:'Corredor Incansável', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 30 corridas de sábado.', need:30, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t10', name:'Velocista Nato', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 40 corridas de sábado.', need:40, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t11', name:'Maratonista Lendário', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 50 corridas de sábado.', need:50, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t12', name:'Guardião do Asfalto', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 65 corridas de sábado.', need:65, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t13', name:'Lenda do Asfalto', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 80 corridas de sábado.', need:80, prog:function(s){return countDone(s,'corrida');} },
+  { id:'corrida_t14', name:'Avatar da Velocidade', color:'corrida', icon:'run', group:'Corrida',
+    desc:'Complete 100 corridas de sábado.', need:100, prog:function(s){return countDone(s,'corrida');} },
+
+  { id:'fase0', name:'Primeiro Feitiço', color:'gold', icon:'book', group:'Trilha de Estudo',
+    desc:'Conclua a Fase 0 — Fundamentos.', need:1, prog:function(s){return phaseComplete(s,0)?1:0;} },
+  { id:'fase1', name:'Mestre das Classes', color:'gold', icon:'book', group:'Trilha de Estudo',
+    desc:'Conclua a Fase 1 — Orientação a Objetos.', need:1, prog:function(s){return phaseComplete(s,1)?1:0;} },
+  { id:'fase2', name:'Domador de Ferramentas', color:'gold', icon:'book', group:'Trilha de Estudo',
+    desc:'Conclua a Fase 2 — Ferramentas Essenciais.', need:1, prog:function(s){return phaseComplete(s,2)?1:0;} },
+  { id:'fase3', name:'Guardião dos Dados', color:'gold', icon:'book', group:'Trilha de Estudo',
+    desc:'Conclua a Fase 3 — Persistência e Banco de Dados.', need:1, prog:function(s){return phaseComplete(s,3)?1:0;} },
+  { id:'guerreiro_fs', name:'Guerreiro Full Stack', color:'gold', icon:'trophy', group:'Trilha de Estudo',
+    desc:'Conclua a Fase 4 — Spring Boot.', need:1, prog:function(s){return phaseComplete(s,4)?1:0;} },
+  { id:'fase5', name:'Arquiteto Consolidado', color:'gold', icon:'book', group:'Trilha de Estudo',
+    desc:'Conclua a Fase 5 — Consolidação e Portfólio.', need:1, prog:function(s){return phaseComplete(s,5)?1:0;} },
+  { id:'lenda_codex', name:'Lenda do Códex', color:'gold', icon:'star', group:'Trilha de Estudo',
+    desc:'Conclua as 6 fases do roteiro Java.', need:1, prog:function(s){
+      for(var i=0;i<STUDY_PHASES.length;i++){ if(!phaseComplete(s,i)) return 0; } return 1; } },
+
+  { id:'itemestudo_t0', name:'Primeiras Anotações', color:'estudo', icon:'book', group:'Itens de Estudo',
+    desc:'Conclua 5 itens de estudo do roteiro Java.', need:5, prog:function(s){return countStudyItemsDone(s);} },
+  { id:'itemestudo_t1', name:'Caderno Recheado', color:'estudo', icon:'book', group:'Itens de Estudo',
+    desc:'Conclua 10 itens de estudo do roteiro Java.', need:10, prog:function(s){return countStudyItemsDone(s);} },
+  { id:'itemestudo_t2', name:'Meio Caminho Andado', color:'estudo', icon:'book', group:'Itens de Estudo',
+    desc:'Conclua 15 itens de estudo do roteiro Java.', need:15, prog:function(s){return countStudyItemsDone(s);} },
+  { id:'itemestudo_t3', name:'Quase Lá', color:'estudo', icon:'book', group:'Itens de Estudo',
+    desc:'Conclua 20 itens de estudo do roteiro Java.', need:20, prog:function(s){return countStudyItemsDone(s);} },
+  { id:'itemestudo_t4', name:'Roteiro Dominado', color:'estudo', icon:'book', group:'Itens de Estudo',
+    desc:'Conclua 25 itens de estudo do roteiro Java.', need:25, prog:function(s){return countStudyItemsDone(s);} },
+
+  { id:'bonus0', name:'Filho da Internet', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Internet & Fundamentos.', need:1, prog:function(s){return bonusGroupComplete(s,0)?1:0;} },
+  { id:'bonus1', name:'Mestre do Git', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Controle de Versão.', need:1, prog:function(s){return bonusGroupComplete(s,1)?1:0;} },
+  { id:'bonus2', name:'Guardião dos Dados Relacionais', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Bancos de Dados.', need:1, prog:function(s){return bonusGroupComplete(s,2)?1:0;} },
+  { id:'bonus3', name:'Arquiteto de APIs', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo APIs.', need:1, prog:function(s){return bonusGroupComplete(s,3)?1:0;} },
+  { id:'bonus4', name:'Caçador de Latência', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Cache & Performance.', need:1, prog:function(s){return bonusGroupComplete(s,4)?1:0;} },
+  { id:'bonus5', name:'Sentinela da Segurança', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Segurança.', need:1, prog:function(s){return bonusGroupComplete(s,5)?1:0;} },
+  { id:'bonus6', name:'Guardião da Qualidade', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Testes & CI/CD.', need:1, prog:function(s){return bonusGroupComplete(s,6)?1:0;} },
+  { id:'bonus7', name:'Mestre dos Padrões', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Arquitetura & Padrões.', need:1, prog:function(s){return bonusGroupComplete(s,7)?1:0;} },
+  { id:'bonus8', name:'Senhor da Infraestrutura', color:'gold', icon:'trophy', group:'Mapa de Backend',
+    desc:'Complete o grupo Escalabilidade & Infra.', need:1, prog:function(s){return bonusGroupComplete(s,8)?1:0;} },
+
+  { id:'itembackend_t0', name:'Explorador do Mapa', color:'gold', icon:'trophy', group:'Itens de Backend',
+    desc:'Conclua 6 itens do mapa avançado de backend.', need:6, prog:function(s){return countBonusItemsDone(s);} },
+  { id:'itembackend_t1', name:'Cartógrafo Iniciante', color:'gold', icon:'trophy', group:'Itens de Backend',
+    desc:'Conclua 12 itens do mapa avançado de backend.', need:12, prog:function(s){return countBonusItemsDone(s);} },
+  { id:'itembackend_t2', name:'Meio Mapa Desvendado', color:'gold', icon:'trophy', group:'Itens de Backend',
+    desc:'Conclua 18 itens do mapa avançado de backend.', need:18, prog:function(s){return countBonusItemsDone(s);} },
+  { id:'itembackend_t3', name:'Cartógrafo Experiente', color:'gold', icon:'trophy', group:'Itens de Backend',
+    desc:'Conclua 24 itens do mapa avançado de backend.', need:24, prog:function(s){return countBonusItemsDone(s);} },
+  { id:'itembackend_t4', name:'Quase no Topo', color:'gold', icon:'trophy', group:'Itens de Backend',
+    desc:'Conclua 30 itens do mapa avançado de backend.', need:30, prog:function(s){return countBonusItemsDone(s);} },
+  { id:'itembackend_t5', name:'Mapa Completo', color:'gold', icon:'trophy', group:'Itens de Backend',
+    desc:'Conclua 36 itens do mapa avançado de backend.', need:36, prog:function(s){return countBonusItemsDone(s);} },
+
+  { id:'emprego_t0', name:'Primeiros Passos na Carreira', color:'gold', icon:'briefcase', group:'Carreira',
+    desc:'Complete 1 tarefa(s) de empregabilidade.', need:1, prog:function(s){return s.employability.filter(function(t){return t.done;}).length;} },
+  { id:'emprego_t1', name:'Currículo em Construção', color:'gold', icon:'briefcase', group:'Carreira',
+    desc:'Complete 3 tarefa(s) de empregabilidade.', need:3, prog:function(s){return s.employability.filter(function(t){return t.done;}).length;} },
+  { id:'emprego_t2', name:'Pronto pro Combate', color:'gold', icon:'briefcase', group:'Carreira',
+    desc:'Complete 5 tarefa(s) de empregabilidade.', need:5, prog:function(s){return s.employability.filter(function(t){return t.done;}).length;} },
+  { id:'emprego_t3', name:'Networking Ativo', color:'gold', icon:'briefcase', group:'Carreira',
+    desc:'Complete 7 tarefa(s) de empregabilidade.', need:7, prog:function(s){return s.employability.filter(function(t){return t.done;}).length;} },
+  { id:'emprego_t4', name:'Quase Empregável', color:'gold', icon:'briefcase', group:'Carreira',
+    desc:'Complete 9 tarefa(s) de empregabilidade.', need:9, prog:function(s){return s.employability.filter(function(t){return t.done;}).length;} },
+
+  { id:'emprego_all', name:'Caçador de Vagas Lendário', color:'gold', icon:'briefcase', group:'Carreira',
+    desc:'Complete toda a trilha de empregabilidade.', need:1, prog:function(s){
+      if(!s.employability.length) return 0;
+      return s.employability.every(function(t){return t.done;}) ? 1 : 0; } },
+
+  { id:'diario_t0', name:'Primeira Linha', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 1 entrada(s) no diário.', need:1, prog:function(s){return s.diary.length;} },
+  { id:'diario_t1', name:'Primeiras Memórias', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 3 entrada(s) no diário.', need:3, prog:function(s){return s.diary.length;} },
+  { id:'diario_t2', name:'Hábito de Escrever', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 5 entrada(s) no diário.', need:5, prog:function(s){return s.diary.length;} },
+  { id:'diario_t3', name:'Cronista da Jornada', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 10 entrada(s) no diário.', need:10, prog:function(s){return s.diary.length;} },
+  { id:'diario_t4', name:'Páginas Acumuladas', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 15 entrada(s) no diário.', need:15, prog:function(s){return s.diary.length;} },
+  { id:'diario_t5', name:'Guardião das Memórias', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 20 entrada(s) no diário.', need:20, prog:function(s){return s.diary.length;} },
+  { id:'diario_t6', name:'Arquivo Pessoal', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 30 entrada(s) no diário.', need:30, prog:function(s){return s.diary.length;} },
+  { id:'diario_t7', name:'Historiador Lendário', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 40 entrada(s) no diário.', need:40, prog:function(s){return s.diary.length;} },
+  { id:'diario_t8', name:'Biblioteca da Alma', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 60 entrada(s) no diário.', need:60, prog:function(s){return s.diary.length;} },
+  { id:'diario_t9', name:'Cronista Eterno', color:'leitura', icon:'feather', group:'Diário de Bordo',
+    desc:'Escreva 90 entrada(s) no diário.', need:90, prog:function(s){return s.diary.length;} },
+
+  { id:'perfeito_t0', name:'Primeiro Dia Impecável', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 1 dia(s) perfeito(s).', need:1, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t1', name:'Trinca Perfeita', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 3 dia(s) perfeito(s).', need:3, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t2', name:'Dia Impecável', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 5 dia(s) perfeito(s).', need:5, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t3', name:'Sequência de Ouro', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 10 dia(s) perfeito(s).', need:10, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t4', name:'Semana Impecável', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 15 dia(s) perfeito(s).', need:15, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t5', name:'Mês Perfeito', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 20 dia(s) perfeito(s).', need:20, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t6', name:'Constância Absoluta', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 30 dia(s) perfeito(s).', need:30, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t7', name:'Perfeição Absoluta', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 40 dia(s) perfeito(s).', need:40, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t8', name:'Trimestre Impecável', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 60 dia(s) perfeito(s).', need:60, prog:function(s){return countPerfectDays(s);} },
+  { id:'perfeito_t9', name:'Lenda da Perfeição', color:'gold', icon:'fire', group:'Dias Perfeitos',
+    desc:'Alcance 90 dia(s) perfeito(s).', need:90, prog:function(s){return countPerfectDays(s);} },
+
+  { id:'nivel_t0', name:'Primeira Ascensão', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 5.', need:5, prog:function(s){return levelOf(s);} },
+  { id:'nivel_t1', name:'Ascensão do Cavaleiro', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 10.', need:10, prog:function(s){return levelOf(s);} },
+  { id:'nivel_t2', name:'Ascensão do Paladino', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 15.', need:15, prog:function(s){return levelOf(s);} },
+  { id:'nivel_t3', name:'Ascensão do Arquimago', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 20.', need:20, prog:function(s){return levelOf(s);} },
+  { id:'nivel_t4', name:'Ascensão do Mestre', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 25.', need:25, prog:function(s){return levelOf(s);} },
+  { id:'nivel_t5', name:'Transcendência do Códex', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 30.', need:30, prog:function(s){return levelOf(s);} },
+  { id:'nivel_t6', name:'Ascensão Suprema', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 40.', need:40, prog:function(s){return levelOf(s);} },
+  { id:'nivel_t7', name:'Avatar do Código', color:'gold', icon:'star', group:'Ascensão de Nível',
+    desc:'Alcance o nível 50.', need:50, prog:function(s){return levelOf(s);} },
+
+  { id:'xp_t0', name:'Primeiro Tesouro', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 100 XP.', need:100, prog:function(s){return s.totalXP;} },
+  { id:'xp_t1', name:'Bolsa de XP', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 250 XP.', need:250, prog:function(s){return s.totalXP;} },
+  { id:'xp_t2', name:'Cofre Crescente', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 500 XP.', need:500, prog:function(s){return s.totalXP;} },
+  { id:'xp_t3', name:'Baú de Conhecimento', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 1000 XP.', need:1000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t4', name:'Fortuna em Ascensão', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 1500 XP.', need:1500, prog:function(s){return s.totalXP;} },
+  { id:'xp_t5', name:'Tesouro Considerável', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 2000 XP.', need:2000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t6', name:'Cofre Reluzente', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 3000 XP.', need:3000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t7', name:'Fortuna do Códex', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 4000 XP.', need:4000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t8', name:'Tesouro Épico', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 5000 XP.', need:5000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t9', name:'Cofre Lendário', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 7500 XP.', need:7500, prog:function(s){return s.totalXP;} },
+  { id:'xp_t10', name:'Fortuna Lendária', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 10000 XP.', need:10000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t11', name:'Tesouro Mítico', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 15000 XP.', need:15000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t12', name:'Riqueza Incalculável', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 20000 XP.', need:20000, prog:function(s){return s.totalXP;} },
+  { id:'xp_t13', name:'Avatar da Fortuna', color:'gold', icon:'star', group:'Riqueza de XP',
+    desc:'Acumule 30000 XP.', need:30000, prog:function(s){return s.totalXP;} },
+
+  { id:'missoes_t0', name:'Primeiras Missões', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 10 missões diárias no total.', need:10, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t1', name:'Aventureiro Ativo', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 25 missões diárias no total.', need:25, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t2', name:'Meio Centenar', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 50 missões diárias no total.', need:50, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t3', name:'Centena de Missões', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 100 missões diárias no total.', need:100, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t4', name:'Aventureiro Experiente', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 150 missões diárias no total.', need:150, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t5', name:'Duzentas Batalhas', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 200 missões diárias no total.', need:200, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t6', name:'Trezentas Conquistas', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 300 missões diárias no total.', need:300, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t7', name:'Veterano de Missões', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 400 missões diárias no total.', need:400, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t8', name:'Quinhentas Vitórias', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 500 missões diárias no total.', need:500, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t9', name:'Setecentas Jornadas', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 750 missões diárias no total.', need:750, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t10', name:'Milhar Histórico', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 1000 missões diárias no total.', need:1000, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t11', name:'Mil e Quinhentas Sagas', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 1500 missões diárias no total.', need:1500, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t12', name:'Duas Mil Conquistas', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 2000 missões diárias no total.', need:2000, prog:function(s){return totalDailyTasksDone(s);} },
+  { id:'missoes_t13', name:'Lenda das Mil Batalhas', color:'gold', icon:'check2', group:'Missões Totais',
+    desc:'Complete 3000 missões diárias no total.', need:3000, prog:function(s){return totalDailyTasksDone(s);} },
+
+  { id:'seqperfeita_t0', name:'Dupla Perfeita', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 2 dias perfeitos seguidos.', need:2, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t1', name:'Trinca de Ouro', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 3 dias perfeitos seguidos.', need:3, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t2', name:'Sequência Brilhante', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 5 dias perfeitos seguidos.', need:5, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t3', name:'Semana Sem Falhas', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 7 dias perfeitos seguidos.', need:7, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t4', name:'Dez Dias de Glória', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 10 dias perfeitos seguidos.', need:10, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t5', name:'Quinze Dias Impecáveis', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 15 dias perfeitos seguidos.', need:15, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t6', name:'Vinte Dias de Fogo', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 20 dias perfeitos seguidos.', need:20, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t7', name:'Um Mês Sem Falhas', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 30 dias perfeitos seguidos.', need:30, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t8', name:'Quarenta e Cinco Dias de Ferro', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 45 dias perfeitos seguidos.', need:45, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t9', name:'Dois Meses Perfeitos', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 60 dias perfeitos seguidos.', need:60, prog:function(s){return perfectStreak(s);} },
+  { id:'seqperfeita_t10', name:'Trimestre Lendário', color:'gold', icon:'fire', group:'Sequência Perfeita',
+    desc:'Alcance 90 dias perfeitos seguidos.', need:90, prog:function(s){return perfectStreak(s);} },
+
+  { id:'extra_t0', name:'Primeiras Extras', color:'estudo', icon:'plus', group:'Tarefas Extras',
+    desc:'Complete 5 tarefas extras no total.', need:5, prog:function(s){return countCustomDone(s);} },
+  { id:'extra_t1', name:'Hábito Extra', color:'estudo', icon:'plus', group:'Tarefas Extras',
+    desc:'Complete 10 tarefas extras no total.', need:10, prog:function(s){return countCustomDone(s);} },
+  { id:'extra_t2', name:'Rotina Personalizada', color:'estudo', icon:'plus', group:'Tarefas Extras',
+    desc:'Complete 20 tarefas extras no total.', need:20, prog:function(s){return countCustomDone(s);} },
+  { id:'extra_t3', name:'Mestre das Extras', color:'estudo', icon:'plus', group:'Tarefas Extras',
+    desc:'Complete 30 tarefas extras no total.', need:30, prog:function(s){return countCustomDone(s);} },
+  { id:'extra_t4', name:'Lenda das Tarefas Extras', color:'estudo', icon:'plus', group:'Tarefas Extras',
+    desc:'Complete 50 tarefas extras no total.', need:50, prog:function(s){return countCustomDone(s);} },
+];
+
+var SKILL_GROUPS = ['Estudo','Leitura','Boxe','Academia','Corrida','Trilha de Estudo','Itens de Estudo','Mapa de Backend','Itens de Backend','Carreira','Diário de Bordo','Dias Perfeitos','Ascensão de Nível','Riqueza de XP','Missões Totais','Sequência Perfeita','Tarefas Extras'];
+var CATS = {
+  estudo:{label:'Estudo', color:'estudo', icon:'book'},
+  leitura:{label:'Leitura', color:'leitura', icon:'bookmark'},
+  boxe:{label:'Boxe', color:'boxe', icon:'glove'},
+  academia:{label:'Academia', color:'academia', icon:'dumbbell'},
+  corrida:{label:'Corrida', color:'corrida', icon:'run'}
+};
+
+var XP = { task:15, perfectDay:25, diary:10, studyItem:20, bonusItem:15, employ:30 };
+
+var NAV = [
+  {id:'hoje', label:'Hoje', icon:'home'},
+  {id:'estudo', label:'Estudo', icon:'book'},
+  {id:'habilidades', label:'Habilidades', icon:'star'},
+  {id:'diario', label:'Diário', icon:'feather'},
+  {id:'empregabilidade', label:'Carreira', icon:'briefcase'},
+  {id:'comunidade', label:'Comunidade', icon:'users'}
+];
+
+/* ================= COMUNIDADE (Firebase — opcional) =================
+   Para ativar a aba Comunidade quando este arquivo estiver hospedado (ex: GitHub Pages):
+   1. Crie um projeto grátis em https://console.firebase.google.com
+   2. Ative o "Firestore Database" (modo produção) no menu lateral
+   3. Em Configurações do projeto > Geral > Seus apps, crie um "app da Web" e copie o objeto de config
+   4. Cole os valores abaixo, substituindo as strings vazias
+   5. Em Firestore > Regras, use algo como:
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+          match /profiles/{code} {
+            allow read, write: if true;
+            match /cheers/{cheerId} {
+              allow read, write: if true;
+            }
+          }
+        }
+      }
+      (Regras abertas — funcionam bem entre amigos de confiança. Não use para dados sensíveis.)
+======================================================================= */
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAh46O5O1Ca6y7fOQ8mJuPYKhkujVf51U0",
+  authDomain: "aventureiro-dev.firebaseapp.com",
+  projectId: "aventureiro-dev",
+  storageBucket: "aventureiro-dev.firebasestorage.app",
+  messagingSenderId: "1037588282462",
+  appId: "1:1037588282462:web:1c9a7e36267e0bea7c88cf"
+};
+
+var db = null;
+function initFirebase(){
+  if(typeof firebase === 'undefined') return false;
+  if(!FIREBASE_CONFIG.apiKey) return false;
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    return true;
+  }catch(e){ return false; }
+}
+var firebaseReady = initFirebase();
+
+var community = { profiles:{}, cheers:[], loading:false, error:null, sendOpenFor:null, justSent:null };
+
+function genCode(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', out='';
+  for(var i=0;i<6;i++){ out += chars[Math.floor(Math.random()*chars.length)]; }
+  return out;
+}
+function ensureMyCode(){
+  if(!state.myCode){ state.myCode = genCode(); saveState(); }
+  return state.myCode;
+}
+function prevMonthKey(mk){
+  var parts = mk.split('-').map(Number), y=parts[0], m=parts[1]-1;
+  if(m<1){ m=12; y--; }
+  return y+'-'+('0'+m).slice(-2);
+}
+function myPublicStats(){
+  var streaks = {};
+  Object.keys(CATS).forEach(function(k){ streaks[k] = streakFor(state,k); });
+  var mk = monthKey(), pmk = prevMonthKey(mk);
+  return {
+    name: state.myName || 'Aventureiro-Dev',
+    level: level(),
+    title: titleForLevel(level()),
+    xp: state.totalXP,
+    perfectDays: countPerfectDays(state),
+    streaks: streaks,
+    monthKey: mk,
+    monthlyXP: state.monthlyXP[mk] || 0,
+    prevMonthKey: pmk,
+    prevMonthXP: state.monthlyXP[pmk] || 0,
+    monthlyWins: state.monthlyWins || 0,
+    categoryCounts: monthlyCategoryCounts(state, mk),
+    updatedAt: Date.now()
+  };
+}
+function publishMyProfile(){
+  if(!firebaseReady || !db || !state.myName) return;
+  var code = ensureMyCode();
+  db.collection('profiles').doc(code).set(myPublicStats(), { merge:true }).catch(function(){});
+}
+async function refreshCommunity(){
+  if(!firebaseReady || !db) return;
+  community.loading = true; community.error = null; render();
+  try{
+    var myCode = ensureMyCode();
+    var jobs = state.friends.map(function(code){
+      return db.collection('profiles').doc(code).get().then(function(doc){
+        community.profiles[code] = doc.exists ? doc.data() : null;
+      }).catch(function(){ community.profiles[code] = null; });
+    });
+    var cheersJob = db.collection('profiles').doc(myCode).collection('cheers')
+      .orderBy('ts','desc').limit(12).get().then(function(qs){
+        community.cheers = qs.docs.map(function(d){ return d.data(); });
+      }).catch(function(){ community.cheers = []; });
+    await Promise.all(jobs.concat([cheersJob]));
+    checkMonthlyCrown();
+  }catch(e){
+    community.error = 'Não foi possível carregar a comunidade agora.';
+  }
+  community.loading = false;
+  render();
+}
+
+function friendXPForMonth(profile, mk){
+  if(!profile) return null;
+  if(profile.monthKey === mk) return profile.monthlyXP || 0;
+  if(profile.prevMonthKey === mk) return profile.prevMonthXP || 0;
+  return null;
+}
+
+function checkMonthlyCrown(){
+  var currentMk = monthKey();
+  if(state.lastMonthCheck === currentMk) return;
+  var endedMonth = state.lastMonthCheck;
+  var myXP = state.monthlyXP[endedMonth] || 0;
+  var best = { code:'__me__', xp: myXP };
+  state.friends.forEach(function(code){
+    var xp = friendXPForMonth(community.profiles[code], endedMonth);
+    if(xp !== null && xp > best.xp){ best = { code:code, xp:xp }; }
+  });
+  if(best.xp > 0 && best.code === '__me__'){
+    state.monthlyWins = (state.monthlyWins||0) + 1;
+    state.winHistory.unshift({ month: endedMonth, xp: myXP });
+    monthlyWinMessage = 'Você foi eleito(a) o Melhor do Mês de '+monthLabel(endedMonth)+'! 🏆';
+  }
+  state.lastMonthCheck = currentMk;
+  saveState();
+  publishMyProfile();
+}
+function addFriend(code){
+  code = (code||'').trim().toUpperCase();
+  if(!code || code.length<4) return;
+  if(code === state.myCode){ return; }
+  if(state.friends.indexOf(code)===-1){
+    state.friends.push(code);
+    saveState(); render();
+    refreshCommunity();
+  }
+}
+function removeFriend(code){
+  state.friends = state.friends.filter(function(c){ return c!==code; });
+  delete community.profiles[code];
+  saveState(); render();
+}
+var CHEER_MESSAGES = ['Continue firme! 💪','Você inspira! 🔥','Foco total, guerreiro(a)!','Cada passo conta — seguimos juntos!'];
+function sendCheer(code, message){
+  if(!firebaseReady || !db) return;
+  db.collection('profiles').doc(code).collection('cheers').add({
+    from: state.myName || 'Um(a) colega de jornada',
+    message: message,
+    ts: Date.now()
+  }).then(function(){
+    community.sendOpenFor = null;
+    community.justSent = code;
+    render();
+  }).catch(function(){});
+}
+
+/* ================= ARMAZENAMENTO (Claude Artifacts ou navegador comum) ================= */
+var hasClaudeStorage = (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+
+async function kvGet(key){
+  if(hasClaudeStorage){
+    return await window.storage.get(key, false);
+  }
+  try{
+    var v = localStorage.getItem(key);
+    return v!==null ? { key:key, value:v, shared:false } : null;
+  }catch(e){ return null; }
+}
+async function kvSet(key, value){
+  if(hasClaudeStorage){
+    return await window.storage.set(key, value, false);
+  }
+  try{ localStorage.setItem(key, value); return { key:key, value:value, shared:false }; }
+  catch(e){ return null; }
+}
+
+/* ================= ESTADO ================= */
+
+var state = null;
+var activeTab = 'hoje';
+var openPhase = 0;
+var penaltyMessage = null;
+var monthlyWinMessage = null;
+
+function todayKey(){ return fmt(new Date()); }
+function fmt(d){
+  var y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2);
+  return y+'-'+m+'-'+day;
+}
+function monthKey(d){
+  d = d || new Date();
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
+}
+var MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function monthLabel(mk){
+  var parts = mk.split('-');
+  return MONTH_NAMES[parseInt(parts[1],10)-1]+'/'+parts[0];
+}
+function addXP(amount){
+  state.totalXP += amount;
+  var mk = monthKey();
+  state.monthlyXP[mk] = (state.monthlyXP[mk]||0) + amount;
+  if(state.monthlyXP[mk] < 0) state.monthlyXP[mk] = 0;
+}
+function defaultState(){
+  return {
+    totalXP:0,
+    taskLog:{},
+    customTasks:[],
+    javaProgress: STUDY_PHASES.map(function(p){ return p.tasks.map(function(){return false;}); }),
+    bonusProgress: BONUS_TRACK.map(function(g){ return g.items.map(function(){return false;}); }),
+    employability: DEFAULT_EMPLOYABILITY.map(function(t,i){ return {id:'e'+i, text:t, done:false}; }),
+    diary: [],
+    diaryAwarded: {},
+    lastPenaltyCheck: todayKey(),
+    myCode: null,
+    myName: '',
+    friends: [],
+    monthlyXP: {},
+    monthlyWins: 0,
+    winHistory: [],
+    lastMonthCheck: monthKey()
+  };
+}
+
+async function loadState(){
+  try{
+    var r = await kvGet('rpg-state-v2');
+    if(r && r.value){
+      var loaded = JSON.parse(r.value);
+      state = Object.assign(defaultState(), loaded);
+      if(!state.javaProgress || state.javaProgress.length !== STUDY_PHASES.length){
+        state.javaProgress = STUDY_PHASES.map(function(p){return p.tasks.map(function(){return false;});});
+      }
+      if(!state.bonusProgress || state.bonusProgress.length !== BONUS_TRACK.length){
+        state.bonusProgress = BONUS_TRACK.map(function(g){return g.items.map(function(){return false;});});
+      }
+    } else {
+      // tenta migrar de uma versão anterior, se existir
+      try{
+        var old = await kvGet('rpg-state-v1');
+        if(old && old.value){ state = Object.assign(defaultState(), JSON.parse(old.value)); }
+        else { state = defaultState(); }
+      }catch(e2){ state = defaultState(); }
+    }
+  }catch(e){
+    state = defaultState();
+  }
+  if(!state.lastPenaltyCheck) state.lastPenaltyCheck = todayKey();
+  if(!state.monthlyXP) state.monthlyXP = {};
+  if(typeof state.monthlyWins !== 'number') state.monthlyWins = 0;
+  if(!state.winHistory) state.winHistory = [];
+  if(!state.lastMonthCheck) state.lastMonthCheck = monthKey();
+  if(!state.friends) state.friends = [];
+  var penaltyResult = processMissedDays();
+  if(penaltyResult.days>0){
+    penaltyMessage = 'Você deixou missões incompletas em '+penaltyResult.days+' dia(s) anterior(es) — perdeu '+penaltyResult.xpLost+' XP.';
+  }
+  saveState();
+  render();
+}
+
+function processMissedDays(){
+  var today = todayKey();
+  var d = new Date(state.lastPenaltyCheck);
+  d.setDate(d.getDate()+1);
+  var customIds = state.customTasks.map(function(t){return t.id;});
+  var daysAffected = 0, xpLost = 0, guard = 0;
+  while(fmt(d) < today && guard < 90){
+    var key = fmt(d), dow = d.getDay();
+    var log = state.taskLog[key] || {};
+    var cats = ['estudo','leitura','boxe','academia','corrida'].filter(function(c){ return isScheduled(c,dow); });
+    var hasAnything = cats.length>0 || customIds.length>0;
+    var allDone = cats.every(function(c){return log[c];}) && customIds.every(function(id){return log.custom && log.custom[id];});
+    if(hasAnything && !allDone && !log.penaltyApplied){
+      log.penaltyApplied = true;
+      addXP(-40);
+      state.taskLog[key] = log;
+      daysAffected++; xpLost += 40;
+    }
+    d.setDate(d.getDate()+1);
+    guard++;
+  }
+  if(state.totalXP<0) state.totalXP = 0;
+  state.lastPenaltyCheck = today;
+  return { days:daysAffected, xpLost:xpLost };
+}
+
+async function saveState(){
+  try{ await kvSet('rpg-state-v2', JSON.stringify(state)); }
+  catch(e){ /* falha silenciosa de gravação */ }
+}
+
+/* ================= LÓGICA RPG ================= */
+
+function level(){ return Math.floor(state.totalXP/100)+1; }
+function xpIntoLevel(){ return state.totalXP%100; }
+function titleForLevel(lv){
+  if(lv<3) return 'Aprendiz Arcano do Hello World';
+  if(lv<6) return 'Escudeiro do Loop';
+  if(lv<10) return 'Caçador de Bugs';
+  if(lv<15) return 'Cavaleiro do Merge Conflict';
+  if(lv<20) return 'Arquimago da Arquitetura';
+  return 'Lenda do Deploy em Produção';
+}
+
+function isScheduled(cat, dow){
+  if(cat==='estudo' || cat==='leitura') return true;
+  if(cat==='boxe') return dow===1 || dow===3;
+  if(cat==='academia') return dow===2 || dow===4 || dow===6;
+  if(cat==='corrida') return dow===6;
+  return false;
+}
+
+function streakFor(s, cat){
+  var count=0, d=new Date(), first=true;
+  for(var i=0;i<365;i++){
+    var key = fmt(d), dow = d.getDay();
+    if(isScheduled(cat,dow)){
+      var done = s.taskLog[key] && s.taskLog[key][cat];
+      if(done){ count++; }
+      else if(!first){ break; }
+    }
+    first=false;
+    d.setDate(d.getDate()-1);
+  }
+  return count;
+}
+function countDone(s, cat){
+  var n=0;
+  for(var k in s.taskLog){ if(s.taskLog[k] && s.taskLog[k][cat]) n++; }
+  return n;
+}
+function monthlyCategoryCounts(s, mk){
+  var counts = {};
+  Object.keys(CATS).forEach(function(k){ counts[k]=0; });
+  for(var key in s.taskLog){
+    if(key.slice(0,7) !== mk) continue;
+    var log = s.taskLog[key];
+    Object.keys(CATS).forEach(function(k){ if(log && log[k]) counts[k]++; });
+  }
+  return counts;
+}
+function bestHabitOf(counts){
+  var best = null;
+  Object.keys(CATS).forEach(function(k){
+    var v = (counts && counts[k]) || 0;
+    if(v>0 && (!best || v>best.count)){ best = { cat:k, count:v }; }
+  });
+  return best;
+}
+function phaseComplete(s, idx){
+  var arr = s.javaProgress[idx];
+  return arr && arr.every(function(v){return v;});
+}
+function bonusGroupComplete(s, gi){
+  var arr = s.bonusProgress[gi];
+  return arr && arr.every(function(v){return v;});
+}
+function countPerfectDays(s){
+  var n=0;
+  for(var k in s.taskLog){ if(s.taskLog[k] && s.taskLog[k].perfectAwarded) n++; }
+  return n;
+}
+function levelOf(s){ return Math.floor(s.totalXP/100)+1; }
+function countStudyItemsDone(s){
+  var n=0; s.javaProgress.forEach(function(arr){ arr.forEach(function(v){ if(v) n++; }); }); return n;
+}
+function countBonusItemsDone(s){
+  var n=0; s.bonusProgress.forEach(function(arr){ arr.forEach(function(v){ if(v) n++; }); }); return n;
+}
+function totalDailyTasksDone(s){
+  var n=0; ['estudo','leitura','boxe','academia','corrida'].forEach(function(c){ n+=countDone(s,c); }); return n;
+}
+function perfectStreak(s){
+  var count=0, d=new Date(), first=true;
+  for(var i=0;i<400;i++){
+    var key = fmt(d);
+    var done = s.taskLog[key] && s.taskLog[key].perfectAwarded;
+    if(done){ count++; } else if(!first){ break; }
+    first=false;
+    d.setDate(d.getDate()-1);
+  }
+  return count;
+}
+function countCustomDone(s){
+  var n=0;
+  for(var k in s.taskLog){
+    var log = s.taskLog[k];
+    if(log && log.custom){ for(var id in log.custom){ if(log.custom[id]) n++; } }
+  }
+  return n;
+}
+function todaysCategories(){
+  var dow = new Date().getDay();
+  var out = [];
+  ['estudo','leitura','boxe','academia','corrida'].forEach(function(c){
+    if(isScheduled(c,dow)) out.push(c);
+  });
+  return out;
+}
+function ensureLog(key){
+  if(!state.taskLog[key]) state.taskLog[key] = {};
+  return state.taskLog[key];
+}
+
+function toggleCategoryTask(cat){
+  var key = todayKey();
+  var log = ensureLog(key);
+  var was = !!log[cat];
+  log[cat] = !was;
+  addXP(was ? -XP.task : XP.task);
+  checkPerfectDay(key, log);
+  afterChange();
+}
+function toggleCustomTask(id){
+  var key = todayKey();
+  var log = ensureLog(key);
+  if(!log.custom) log.custom = {};
+  var was = !!log.custom[id];
+  log.custom[id] = !was;
+  addXP(was ? -XP.task : XP.task);
+  checkPerfectDay(key, log);
+  afterChange();
+}
+function checkPerfectDay(key, log){
+  var cats = todaysCategories();
+  var customIds = state.customTasks.map(function(t){return t.id;});
+  var allDone = cats.every(function(c){return log[c];}) &&
+                customIds.every(function(id){return log.custom && log.custom[id];});
+  if(allDone && !log.perfectAwarded){
+    log.perfectAwarded = true;
+    addXP(XP.perfectDay);
+  } else if(!allDone && log.perfectAwarded){
+    log.perfectAwarded = false;
+    addXP(-XP.perfectDay);
+  }
+}
+function addCustomTask(text){
+  if(!text.trim()) return;
+  state.customTasks.push({ id:'c'+Date.now(), text:text.trim() });
+  afterChange();
+}
+function removeCustomTask(id){
+  state.customTasks = state.customTasks.filter(function(t){return t.id!==id;});
+  for(var k in state.taskLog){ if(state.taskLog[k].custom) delete state.taskLog[k].custom[id]; }
+  afterChange();
+}
+function toggleStudyItem(phaseIdx, itemIdx){
+  var was = state.javaProgress[phaseIdx][itemIdx];
+  state.javaProgress[phaseIdx][itemIdx] = !was;
+  addXP(was ? -XP.studyItem : XP.studyItem);
+  afterChange();
+}
+function toggleBonusItem(groupIdx, itemIdx){
+  var was = state.bonusProgress[groupIdx][itemIdx];
+  state.bonusProgress[groupIdx][itemIdx] = !was;
+  addXP(was ? -XP.bonusItem : XP.bonusItem);
+  afterChange();
+}
+function toggleEmployTask(id){
+  var t = state.employability.find(function(x){return x.id===id;});
+  if(!t) return;
+  t.done = !t.done;
+  addXP(t.done ? XP.employ : -XP.employ);
+  afterChange();
+}
+function addEmployTask(text){
+  if(!text.trim()) return;
+  state.employability.push({id:'e'+Date.now(), text:text.trim(), done:false});
+  afterChange();
+}
+function addDiaryEntry(text){
+  if(!text.trim()) return;
+  var key = todayKey();
+  state.diary.unshift({ date:key, text:text.trim(), ts:Date.now() });
+  if(!state.diaryAwarded[key]){ state.diaryAwarded[key] = true; addXP(XP.diary); }
+  afterChange();
+}
+function afterChange(){
+  if(state.totalXP<0) state.totalXP = 0;
+  saveState();
+  publishMyProfile();
+  render();
+}
+async function resetAll(){
+  if(!confirm('Isso apaga todo o seu progresso da campanha. Tem certeza?')) return;
+  state = defaultState();
+  await saveState();
+  render();
+}
+
+/* ================= RENDER ================= */
+
+var app = document.getElementById('app');
+function esc(s){
+  return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
+}
+
+function ringSVG(pct, size, stroke, colorVar){
+  var r = (size-stroke)/2, c = 2*Math.PI*r, off = c*(1-pct/100);
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+    '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="var(--line-strong)" stroke-width="'+stroke+'"/>'+
+    '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+colorVar+'" stroke-width="'+stroke+'" '+
+      'stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" style="transition:stroke-dashoffset .6s ease"/>'+
+  '</svg>';
+}
+
+function render(){
+  var lv = level(), pct = xpIntoLevel(), dateObj = new Date();
+
+  var sidebar =
+    '<div class="sidebar">'+
+      '<div class="brand"><div class="mark">'+icon('trophy')+'</div>'+
+        '<div><div class="name">Caderno de Campanha</div><div class="sub">'+WEEKDAYS[dateObj.getDay()]+'</div></div>'+
+      '</div>'+
+      '<div class="level-card">'+
+        '<div class="ring-wrap">'+
+          '<div class="ring">'+ringSVG(pct,56,6,'var(--gold)')+'<div class="lvl"><b>'+lv+'</b><span>NÍVEL</span></div></div>'+
+          '<div><div class="level-title">'+titleForLevel(lv)+'</div><div class="level-xp">'+pct+'/100 XP</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="nav">'+ NAV.map(function(t){
+        return '<button class="nav-btn'+(activeTab===t.id?' active':'')+'" data-tab="'+t.id+'">'+icon(t.icon)+'<span>'+t.label+'</span></button>';
+      }).join('') +'</div>'+
+      '<div class="streaks-mini">'+ Object.keys(CATS).map(function(k){
+        var c = CATS[k], st = streakFor(state,k);
+        return '<div class="row"><span class="dot" style="background:var(--'+c.color+')"></span>'+c.label+' <b style="margin-left:auto">'+st+'d</b></div>';
+      }).join('') +'</div>'+
+      '<div class="sidebar-foot"><button class="reset-link" id="resetBtn">Reiniciar campanha</button></div>'+
+    '</div>';
+
+  var mobileTop =
+    '<div class="mobile-top">'+
+      '<div class="brand"><div class="mark" style="width:28px;height:28px;border-radius:8px;">'+icon('trophy')+'</div>'+
+        '<div class="name" style="font-size:13.5px;">Caderno de Campanha</div></div>'+
+      '<div class="ring">'+ringSVG(pct,40,5,'var(--gold)')+'<div class="lvl"><b>'+lv+'</b></div></div>'+
+    '</div>';
+
+  var mobileNav =
+    '<div class="mobile-nav">'+ NAV.map(function(t){
+      return '<button class="'+(activeTab===t.id?'active':'')+'" data-tab="'+t.id+'">'+icon(t.icon)+'<span>'+t.label+'</span></button>';
+    }).join('') +'</div>';
+
+  var html = '<div class="shell">'+sidebar+
+    '<div class="main">'+mobileTop+renderTab()+'</div>'+
+  '</div>'+mobileNav;
+
+  app.innerHTML = html;
+  bindEvents();
+}
+
+function renderTab(){
+  if(activeTab==='hoje') return renderHoje();
+  if(activeTab==='estudo') return renderEstudo();
+  if(activeTab==='habilidades') return renderHabilidades();
+  if(activeTab==='diario') return renderDiario();
+  if(activeTab==='empregabilidade') return renderEmpregabilidade();
+  if(activeTab==='comunidade') return renderComunidade();
+  return '';
+}
+
+function greeting(){
+  var h = new Date().getHours();
+  if(h<12) return 'Bom dia';
+  if(h<18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function renderHoje(){
+  var lv = level(), pct = xpIntoLevel(), dow = new Date().getDay();
+  var key = todayKey(), log = state.taskLog[key] || {};
+  var cats = todaysCategories();
+
+  var html = '<div class="page-head"><span class="eyebrow">'+WEEKDAYS[dow]+'</span>'+
+    '<h1>'+greeting()+', aventureiro-dev</h1>'+
+    '<p>Aqui estão as missões que mantêm sua campanha em movimento hoje.</p></div>';
+
+  html += '<div class="hero">'+
+    '<div class="hero-ring">'+ringSVG(pct,98,9,'var(--gold)')+'<div class="lvl"><b>'+lv+'</b><span>nível</span></div></div>'+
+    '<div class="hero-info">'+
+      '<div class="title">'+titleForLevel(lv)+'</div>'+
+      '<div class="xp">'+state.totalXP+' XP acumulados · faltam '+(100-pct)+' XP para o próximo nível</div>'+
+      '<div class="xpbar-track"><div class="xpbar-fill" style="width:'+pct+'%"></div></div>'+
+      '<div class="streak-chips">'+ Object.keys(CATS).map(function(k){
+        var c = CATS[k], st = streakFor(state,k);
+        return '<div class="streak-chip" style="background:var(--'+c.color+'-bg);color:var(--'+c.color+')">'+icon(c.icon)+' '+st+' dia(s) — '+c.label+'</div>';
+      }).join('') +'</div>'+
+    '</div>'+
+  '</div>';
+
+  var customIds = state.customTasks.map(function(t){return t.id;});
+  var allDone = cats.length+customIds.length>0 && cats.every(function(c){return log[c];}) && customIds.every(function(id){return log.custom && log.custom[id];});
+  if(monthlyWinMessage){
+    html += '<div class="banner">'+icon('trophy')+' '+esc(monthlyWinMessage)+'<button class="close" id="dismissMonthlyWin">✕</button></div>';
+  }
+  if(penaltyMessage){
+    html += '<div class="banner warn">'+icon('trash')+' '+esc(penaltyMessage)+'<button class="close" id="dismissPenalty">✕</button></div>';
+  }
+  if(allDone){
+    html += '<div class="banner">'+icon('fire')+' Dia perfeito! Todas as missões de hoje concluídas — bônus de +'+XP.perfectDay+' XP garantido.</div>';
+  }
+
+  html += '<div class="card"><h2>'+icon('check2')+' Missões de hoje</h2>'+
+    '<div class="rule-note">'+icon('trash')+' Missões não concluídas até o fim do dia custam <b>&nbsp;-40 XP</b></div>';
+  if(!cats.length && !state.customTasks.length){
+    html += '<div class="empty">Nenhuma missão agendada para hoje. Aproveite para descansar ou adiantar leitura extra.</div>';
+  } else {
+    html += '<div class="quest-list">';
+    cats.forEach(function(c){ html += questRow('cat:'+c, CATS[c].label, !!log[c], c, XP.task); });
+    state.customTasks.forEach(function(t){
+      html += questRow('custom:'+t.id, t.text, !!(log.custom && log.custom[t.id]), null, XP.task, t.id);
+    });
+    html += '</div>';
+  }
+  html += '<div class="inline-form">'+
+    '<input class="field" id="newTaskInput" placeholder="Adicionar tarefa diária (ex: alongar, meditar…)"/>'+
+    '<button class="btn" id="addTaskBtn">'+icon('plus')+'</button>'+
+  '</div></div>';
+
+  return html;
+}
+
+function questRow(key, label, done, catKey, xp, delId){
+  var iconHtml, bg='var(--card-soft)', fg='var(--ink-soft)';
+  if(catKey){
+    var c = CATS[catKey];
+    bg = 'var(--'+c.color+'-bg)'; fg='var(--'+c.color+')';
+    iconHtml = icon(c.icon);
+  } else {
+    iconHtml = icon('plus');
+  }
+  var delBtn = delId ? '<button class="q-del" data-remove="'+delId+'">'+icon('trash')+'</button>' : '';
+  return '<div class="quest">'+
+    '<div class="checkbox'+(done?' done':'')+'" data-toggle="'+key+'"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></div>'+
+    '<div class="q-icon" style="background:'+bg+';color:'+fg+'">'+iconHtml+'</div>'+
+    '<div class="q-body"><div class="q-name'+(done?' done':'')+'">'+esc(label)+'</div><div class="q-xp">+'+xp+' XP</div></div>'+
+    delBtn+
+  '</div>';
+}
+
+function renderEstudo(){
+  var html = '<div class="page-head"><span class="eyebrow">Trilha de Estudo</span><h1>Java Back-end</h1>'+
+    '<p>Seu roteiro pessoal transformado em campanha. Avance fase por fase — cada item concluído soma XP.</p></div>';
+
+  html += '<div class="card"><div class="timeline">';
+  STUDY_PHASES.forEach(function(phase, idx){
+    var arr = state.javaProgress[idx];
+    var doneCount = arr.filter(function(v){return v;}).length;
+    var pct = Math.round(100*doneCount/arr.length);
+    var complete = doneCount===arr.length;
+    var isOpen = openPhase===idx;
+    html += '<div class="phase">'+
+      '<div class="phase-node'+(complete?' complete':'')+'">'+(complete?icon('check2','filled'):idx+1)+'</div>'+
+      '<div class="phase-head" data-openphase="'+idx+'">'+
+        '<div class="phase-title">'+esc(phase.title)+'</div>'+
+        '<div class="phase-dur mono">'+phase.dur+'</div>'+
+        '<div class="phase-pct">'+pct+'%</div>'+
+        '<div class="chevron'+(isOpen?' open':'')+'">'+icon('chevron')+'</div>'+
+      '</div>'+
+      '<div class="phase-body'+(isOpen?' open':'')+'"><div class="phase-body-inner">'+
+        '<div class="quest-list">'+
+          phase.tasks.map(function(t,ti){ return questRow('study:'+idx+':'+ti, t, arr[ti], 'estudo', XP.studyItem); }).join('')+
+        '</div>'+
+        '<div class="project-note">'+icon('star')+' <span><b>Projeto de portfólio:</b> '+esc(phase.project)+'</span></div>'+
+      '</div></div>'+
+    '</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="card"><h2>'+icon('trophy')+' Mapa avançado de backend</h2>'+
+    '<p class="muted">Side quests opcionais para depois da Fase 4 — panorama geral de backend. Cada item vale +'+XP.bonusItem+' XP.</p>';
+  BONUS_TRACK.forEach(function(group, gi){
+    html += '<div class="bonus-group"><h4>'+esc(group.section)+'</h4><div class="chip-list">';
+    group.items.forEach(function(item, ii){
+      var done = state.bonusProgress[gi][ii];
+      html += '<div class="chip'+(done?' done':'')+'" data-bonus="'+gi+':'+ii+'">'+(done?icon('check2'):'')+esc(item)+'</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderHabilidades(){
+  var totalUnlocked = SKILL_DEFS.filter(function(sk){ return sk.prog(state) >= sk.need; }).length;
+  var html = '<div class="page-head"><span class="eyebrow">Conquistas</span><h1>Árvore de Habilidades</h1>'+
+    '<p>Desbloqueadas pela sua constância nos treinos e estudos — '+totalUnlocked+' de '+SKILL_DEFS.length+' desbloqueadas.</p></div>';
+
+  SKILL_GROUPS.forEach(function(group){
+    var items = SKILL_DEFS.filter(function(sk){ return sk.group===group; });
+    if(!items.length) return;
+    var unlockedCount = items.filter(function(sk){ return sk.prog(state) >= sk.need; }).length;
+    html += '<div class="card"><h3 style="margin-top:0;display:flex;align-items:center;justify-content:space-between;">'+
+      '<span>'+esc(group)+'</span><span class="faint mono">'+unlockedCount+' / '+items.length+'</span></h3>'+
+      '<div class="skill-grid">';
+    items.forEach(function(sk){
+      var prog = sk.prog(state), unlocked = prog >= sk.need, p = Math.min(100, Math.round(100*prog/sk.need));
+      html += '<div class="skill'+(unlocked?' unlocked':' locked')+'">'+
+        '<div class="sk-badge">'+icon(unlocked?'trophy':'lock')+'</div>'+
+        '<div class="sk-icon" style="background:var(--'+sk.color+'-bg);color:var(--'+sk.color+')">'+icon(sk.icon)+'</div>'+
+        '<div class="sk-name">'+esc(sk.name)+'</div>'+
+        '<div class="sk-desc">'+esc(sk.desc)+'</div>'+
+        '<div class="sk-track"><div class="sk-fill" style="width:'+p+'%;background:var(--'+sk.color+')"></div></div>'+
+        '<div class="sk-prog">'+Math.min(prog,sk.need)+' / '+sk.need+'</div>'+
+      '</div>';
+    });
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function renderDiario(){
+  var html = '<div class="page-head"><span class="eyebrow">Registro pessoal</span><h1>Diário de Bordo</h1>'+
+    '<p>A primeira entrada do dia rende +'+XP.diary+' XP.</p></div>';
+  html += '<div class="card">'+
+    '<textarea class="field" id="diaryInput" placeholder="O que aconteceu hoje na sua jornada?"></textarea>'+
+    '<div style="margin-top:10px;"><button class="btn" id="diarySaveBtn">'+icon('feather')+' Registrar</button></div>'+
+  '</div>';
+  html += '<div class="card"><h3 style="margin-top:0;">Entradas anteriores</h3>';
+  if(!state.diary.length){
+    html += '<div class="empty">Nenhuma entrada ainda. Comece a escrever sua saga.</div>';
+  } else {
+    state.diary.forEach(function(e){
+      html += '<div class="diary-entry"><div class="d-icon">'+icon('feather')+'</div>'+
+        '<div><div class="d-date">'+e.date+'</div><p>'+esc(e.text)+'</p></div></div>';
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
+function streakChipsFor(streaks){
+  return Object.keys(CATS).map(function(k){
+    var c = CATS[k], v = (streaks && streaks[k]) || 0;
+    return '<span class="mini-chip" style="background:var(--'+c.color+'-bg);color:var(--'+c.color+')">'+icon(c.icon)+' '+v+'d</span>';
+  }).join('');
+}
+
+function renderRankCard(opts){
+  var html = '<div class="card"><h3 style="margin-top:0;">'+icon(opts.icon)+' '+opts.heading+'</h3>';
+  if(opts.subtitle) html += '<p class="muted">'+opts.subtitle+'</p>';
+  if(!opts.rows.length){
+    html += '<div class="empty">'+(opts.emptyText||'Nada por aqui ainda.')+'</div></div>';
+    return html;
+  }
+  html += '<div class="quest-list">';
+  opts.rows.forEach(function(r,i){
+    var pos=i+1;
+    var medal = pos===1?'var(--gold)':pos===2?'#8FA0B3':pos===3?'#B4784A':'var(--ink-faint)';
+    var medalBg = pos===1?'var(--gold-bg)':pos<=3?'var(--card-soft)':'transparent';
+    html += '<div class="friend-row">'+
+      '<div style="display:flex;align-items:center;gap:12px;">'+
+        '<div class="rank-badge" style="color:'+medal+';background:'+medalBg+';border-color:'+medal+';">'+((pos===1 && r.crown) ? icon('trophy') : pos)+'</div>'+
+        '<div class="friend-info">'+
+          '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">'+
+            '<span class="q-name">'+esc(r.name)+(r.isMe?' <span class="faint">(você)</span>':'')+'</span>'+
+            (r.subLabel? '<span class="faint mono">'+r.subLabel+'</span>' : '')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="mono" style="font-size:12.5px;color:var(--ink-soft);">'+r.valueText+'</div>'+
+    '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+function renderRanking(){
+  var rows = [{ code:'__me__', isMe:true, data:myPublicStats() }];
+  state.friends.forEach(function(code){
+    var p = community.profiles[code];
+    if(p){ rows.push({ code:code, isMe:false, data:p }); }
+  });
+  rows.sort(function(a,b){ return (b.data.xp||0) - (a.data.xp||0); });
+  return renderRankCard({
+    icon:'trophy', heading:'Ranking da turma',
+    subtitle:'Não é sobre vencer ninguém — é só um retrato de quem está mantendo o ritmo. Use pra se inspirar, não pra se comparar.',
+    rows: rows.map(function(r){
+      return { name:r.data.name, isMe:r.isMe, subLabel:'nível '+r.data.level+' · '+esc(r.data.title), valueText:(r.data.xp||0)+' XP' };
+    })
+  });
+}
+
+function renderMonthlyRanking(){
+  var mk = monthKey();
+  var rows = [{ code:'__me__', isMe:true, data:myPublicStats() }];
+  state.friends.forEach(function(code){
+    var p = community.profiles[code];
+    var xp = friendXPForMonth(p, mk);
+    if(p && xp!==null){ rows.push({ code:code, isMe:false, data:p, xp:xp }); }
+  });
+  rows.forEach(function(r){ if(r.xp===undefined) r.xp = r.data.monthlyXP||0; });
+  rows.sort(function(a,b){ return b.xp - a.xp; });
+  return renderRankCard({
+    icon:'fire', heading:'Melhor do mês — '+monthLabel(mk)+' (em andamento)',
+    subtitle:'A apuração fecha quando o mês vira e alguém do grupo abre o app de novo. Ainda dá tempo de virar o jogo.',
+    rows: rows.map(function(r){
+      return { name:r.data.name, isMe:r.isMe, crown:true, subLabel:'nível '+r.data.level, valueText:r.xp+' XP no mês' };
+    }),
+    emptyText:'Ainda não há dados suficientes pra apurar o mês.'
+  });
+}
+
+function renderCategoryRanking(){
+  var people = [{ code:'__me__', isMe:true, data:myPublicStats() }];
+  state.friends.forEach(function(code){
+    var p = community.profiles[code];
+    if(p) people.push({ code:code, isMe:false, data:p });
+  });
+  var html = '<div class="card"><h3 style="margin-top:0;">'+icon('trophy')+' Ranking por Etapa</h3>'+
+    '<p class="muted">Quem está com a sequência mais forte em cada trilha, agora.</p>';
+  Object.keys(CATS).forEach(function(catKey){
+    var cat = CATS[catKey];
+    var rows = people.map(function(p){
+      var streak = (p.data.streaks && p.data.streaks[catKey]) || 0;
+      return { name:p.data.name, isMe:p.isMe, streak:streak };
+    }).filter(function(r){ return r.streak>0; })
+      .sort(function(a,b){ return b.streak-a.streak; });
+    html += '<h3 style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--'+cat.color+');margin:18px 0 6px;">'+icon(cat.icon)+' '+cat.label+'</h3>';
+    if(!rows.length){
+      html += '<div class="empty" style="padding:6px 0;">Ninguém em sequência ainda nessa trilha.</div>';
+    } else {
+      html += '<div class="quest-list">';
+      rows.forEach(function(r,i){
+        var pos=i+1;
+        html += '<div class="friend-row" style="padding:8px 6px;">'+
+          '<div style="display:flex;align-items:center;gap:10px;">'+
+            '<span class="faint mono" style="width:16px;">'+pos+'º</span>'+
+            '<span class="q-name" style="font-size:13px;">'+esc(r.name)+(r.isMe?' <span class="faint">(você)</span>':'')+'</span>'+
+          '</div>'+
+          '<span class="mono" style="font-size:12px;color:var(--ink-soft);">'+r.streak+' dia(s)</span>'+
+        '</div>';
+      });
+      html += '</div>';
+    }
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderBestHabitMonth(){
+  var mk = monthKey();
+  var people = [{ code:'__me__', isMe:true, data:myPublicStats() }];
+  state.friends.forEach(function(code){
+    var p = community.profiles[code];
+    if(p) people.push({ code:code, isMe:false, data:p });
+  });
+  var rows = people.map(function(p){
+    var best = bestHabitOf(p.data.categoryCounts);
+    return { name:p.data.name, isMe:p.isMe, best:best };
+  }).filter(function(r){ return r.best; })
+    .sort(function(a,b){ return b.best.count - a.best.count; });
+  return renderRankCard({
+    icon:'fire', heading:'Melhor Hábito do Mês — '+monthLabel(mk),
+    subtitle:'O hábito que cada um mais praticou esse mês, olhando todas as trilhas.',
+    rows: rows.map(function(r){
+      var cat = CATS[r.best.cat];
+      return { name:r.name, isMe:r.isMe, subLabel:cat.label, valueText:r.best.count+'x este mês' };
+    }),
+    emptyText:'Ainda não há registros suficientes esse mês.'
+  });
+}
+
+function renderHallOfFame(){
+  var rows = [{ code:'__me__', isMe:true, name:state.myName||'Você', wins: state.monthlyWins||0 }];
+  state.friends.forEach(function(code){
+    var p = community.profiles[code];
+    if(p){ rows.push({ code:code, isMe:false, name:p.name, wins: p.monthlyWins||0 }); }
+  });
+  rows.sort(function(a,b){ return b.wins - a.wins; });
+  return renderRankCard({
+    icon:'star', heading:'Hall da Fama — Melhores do Mês',
+    subtitle:'Quantas vezes cada um já foi o destaque do mês na sua turma.',
+    rows: rows.map(function(r){
+      return { name:r.name, isMe:r.isMe, valueText:(r.wins===1?'1 vez':r.wins+' vezes') };
+    }),
+    emptyText:'Ninguém foi eleito o melhor do mês ainda — o próximo pode ser você.'
+  });
+}
+
+function renderComunidade(){
+  var html = '<div class="page-head"><span class="eyebrow">Jornada Compartilhada</span><h1>Comunidade</h1>'+
+    '<p>Aqui não existe ranking pra vencer — só pessoas reais tentando ficar mais focadas, um dia de cada vez. '+
+    'Veja como seus amigos estão se saindo pra se inspirar, e mande um aceno de apoio pra quem está indo bem. '+
+    'O objetivo continua o mesmo: o seu próprio sonho, sem distrações.</p></div>';
+
+  if(!firebaseReady){
+    html += '<div class="card"><h2>'+icon('users')+' Configure a Comunidade</h2>'+
+      '<p class="muted">Essa aba precisa de um banco de dados gratuito (Firebase) pra funcionar entre dispositivos diferentes — algo que o GitHub Pages sozinho não oferece.</p>'+
+      '<ol style="padding-left:18px; font-size:13.5px; color:var(--ink-soft); line-height:1.9;">'+
+        '<li>Crie um projeto grátis em <b>console.firebase.google.com</b></li>'+
+        '<li>Ative o <b>Firestore Database</b> (modo produção)</li>'+
+        '<li>Em "Configurações do projeto → Seus apps", crie um app da Web e copie as chaves</li>'+
+        '<li>Cole as chaves no objeto <code class="mono">FIREBASE_CONFIG</code>, no início do arquivo HTML</li>'+
+        '<li>Configure as regras do Firestore conforme o comentário deixado no código</li>'+
+      '</ol>'+
+      '<p class="faint">Sem isso, o resto do app continua funcionando normalmente — só essa aba fica em espera.</p>'+
+    '</div>';
+    return html;
+  }
+
+  if(!state.myName){
+    html += '<div class="card"><h2>'+icon('users')+' Como você quer ser chamado?</h2>'+
+      '<p class="muted">Esse nome aparece pros seus amigos na comunidade.</p>'+
+      '<div class="inline-form"><input class="field" id="myNameInput" placeholder="Seu nome ou apelido" maxlength="24"/>'+
+      '<button class="btn" id="saveNameBtn">Salvar</button></div></div>';
+    return html;
+  }
+
+  var myCode = ensureMyCode();
+
+  html += '<div class="card">'+
+    '<h2>'+icon('send')+' Seu código de jornada</h2>'+
+    '<p class="muted">Compartilhe com quem você quer ter por perto. Quem tiver seu código pode te adicionar também.</p>'+
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'+
+      '<div class="mono" style="font-size:22px;font-weight:700;letter-spacing:0.12em;background:var(--card-soft);padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--line-strong);">'+myCode+'</div>'+
+      '<button class="btn ghost" id="copyCodeBtn">'+icon('copy')+' Copiar</button>'+
+    '</div></div>';
+
+  html += '<div class="card"><h2>'+icon('users')+' Adicionar um companheiro</h2>'+
+    '<div class="inline-form"><input class="field" id="friendCodeInput" placeholder="Código do seu amigo (ex: A1B2C3)" maxlength="8"/>'+
+    '<button class="btn" id="addFriendBtn">Adicionar</button></div></div>';
+
+  html += '<div class="card"><h2>'+icon('users')+' Companheiros de jornada '+
+    '<button class="btn ghost" id="refreshCommunityBtn" style="margin-left:auto;font-size:11.5px;padding:6px 12px;">'+(community.loading?'Atualizando…':'Atualizar')+'</button></h2>';
+
+  if(!state.friends.length){
+    html += '<div class="empty">Você ainda não adicionou ninguém. Compartilhe seu código com um amigo ou peça o dele.</div>';
+  } else {
+    html += '<div class="quest-list">';
+    state.friends.forEach(function(code){
+      var p = community.profiles[code];
+      html += '<div class="friend-row">';
+      if(p===undefined){
+        html += '<div class="friend-info"><div class="q-name">'+code+'</div><div class="faint">Carregando…</div></div>';
+      } else if(p===null){
+        html += '<div class="friend-info"><div class="q-name">'+code+'</div><div class="faint">Perfil não encontrado.</div></div>'+
+          '<button class="q-del" data-remove-friend="'+code+'">'+icon('trash')+'</button>';
+      } else {
+        html += '<div class="friend-info">'+
+          '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">'+
+            '<span class="q-name">'+esc(p.name)+'</span>'+
+            '<span class="faint mono">nível '+p.level+' · '+esc(p.title)+'</span>'+
+          '</div>'+
+          '<div class="mini-chip-row">'+streakChipsFor(p.streaks)+'</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;">'+
+          '<button class="btn ghost" data-cheer-open="'+code+'" style="font-size:11.5px;padding:7px 11px;">'+icon('send')+' Apoiar</button>'+
+          '<button class="q-del" data-remove-friend="'+code+'">'+icon('trash')+'</button>'+
+        '</div>';
+      }
+      html += '</div>';
+      if(community.sendOpenFor===code){
+        html += '<div class="cheer-panel">'+ CHEER_MESSAGES.map(function(m){
+          return '<button class="chip" data-cheer-send="'+code+'|'+esc(m)+'">'+esc(m)+'</button>';
+        }).join('') + '</div>';
+      }
+      if(community.justSent===code){
+        html += '<div class="rule-note" style="color:var(--academia);background:var(--academia-bg);">'+icon('fire')+' Apoio enviado!</div>';
+      }
+    });
+    html += '</div>';
+  }
+  if(community.error){ html += '<p class="faint" style="color:var(--danger);">'+esc(community.error)+'</p>'; }
+  html += '</div>';
+
+  html += renderMonthlyRanking();
+  html += renderBestHabitMonth();
+  html += renderCategoryRanking();
+  html += renderRanking();
+  html += renderHallOfFame();
+
+  html += '<div class="card"><h3 style="margin-top:0;">'+icon('fire')+' Apoios recebidos</h3>';
+  if(!community.cheers.length){
+    html += '<div class="empty">Ninguém te mandou um aceno ainda — tudo bem, continue no seu ritmo.</div>';
+  } else {
+    community.cheers.forEach(function(c){
+      html += '<div class="diary-entry"><div class="d-icon" style="background:var(--gold-bg);color:var(--gold);">'+icon('fire')+'</div>'+
+        '<div><div class="d-date">de '+esc(c.from)+'</div><p>'+esc(c.message)+'</p></div></div>';
+    });
+  }
+  html += '</div>';
+
+  return html;
+}
+
+function renderEmpregabilidade(){
+  var html = '<div class="page-head"><span class="eyebrow">Fora do código</span><h1>Trilha de Empregabilidade</h1>'+
+    '<p>Constrói sua presença profissional. Cada tarefa vale +'+XP.employ+' XP.</p></div>';
+  html += '<div class="card"><div class="quest-list">';
+  state.employability.forEach(function(t){
+    html += questRow('employ:'+t.id, t.text, t.done, null, XP.employ);
+  });
+  html += '</div><div class="inline-form">'+
+    '<input class="field" id="newEmployInput" placeholder="Nova tarefa de empregabilidade"/>'+
+    '<button class="btn" id="addEmployBtn">'+icon('plus')+'</button>'+
+  '</div></div>';
+  return html;
+}
+
+/* ================= EVENTOS ================= */
+
+function bindEvents(){
+  app.querySelectorAll('[data-tab]').forEach(function(el){
+    el.addEventListener('click', function(){
+      activeTab = el.getAttribute('data-tab');
+      render();
+      if(activeTab==='comunidade' && firebaseReady && state.myName){ publishMyProfile(); refreshCommunity(); }
+    });
+  });
+  app.querySelectorAll('[data-toggle]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var parts = el.getAttribute('data-toggle').split(':');
+      if(parts[0]==='cat') toggleCategoryTask(parts[1]);
+      else if(parts[0]==='custom') toggleCustomTask(parts[1]);
+      else if(parts[0]==='study') toggleStudyItem(parseInt(parts[1]), parseInt(parts[2]));
+      else if(parts[0]==='employ') toggleEmployTask(parts[1]);
+    });
+  });
+  app.querySelectorAll('[data-remove]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); removeCustomTask(el.getAttribute('data-remove')); });
+  });
+  app.querySelectorAll('[data-openphase]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var idx = parseInt(el.getAttribute('data-openphase'));
+      openPhase = (openPhase===idx) ? null : idx;
+      render();
+    });
+  });
+  app.querySelectorAll('[data-bonus]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var parts = el.getAttribute('data-bonus').split(':');
+      toggleBonusItem(parseInt(parts[0]), parseInt(parts[1]));
+    });
+  });
+
+  bindClick('addTaskBtn', function(){ addCustomTask(byId('newTaskInput').value); });
+  bindEnter('newTaskInput', function(v){ addCustomTask(v); });
+  bindClick('addEmployBtn', function(){ addEmployTask(byId('newEmployInput').value); });
+  bindEnter('newEmployInput', function(v){ addEmployTask(v); });
+  bindClick('diarySaveBtn', function(){ addDiaryEntry(byId('diaryInput').value); });
+  bindClick('resetBtn', resetAll);
+  bindClick('dismissPenalty', function(){ penaltyMessage = null; render(); });
+  bindClick('dismissMonthlyWin', function(){ monthlyWinMessage = null; render(); });
+
+  bindClick('saveNameBtn', function(){
+    var v = byId('myNameInput').value.trim();
+    if(!v) return;
+    state.myName = v.slice(0,24);
+    ensureMyCode();
+    saveState();
+    publishMyProfile();
+    refreshCommunity();
+    render();
+  });
+  bindEnter('myNameInput', function(v){ byId('saveNameBtn') && byId('saveNameBtn').click(); });
+
+  bindClick('copyCodeBtn', function(){
+    var code = state.myCode || '';
+    if(navigator.clipboard){ navigator.clipboard.writeText(code).catch(function(){}); }
+  });
+
+  bindClick('addFriendBtn', function(){ addFriend(byId('friendCodeInput').value); });
+  bindEnter('friendCodeInput', function(v){ addFriend(v); });
+
+  bindClick('refreshCommunityBtn', refreshCommunity);
+
+  app.querySelectorAll('[data-remove-friend]').forEach(function(el){
+    el.addEventListener('click', function(){ removeFriend(el.getAttribute('data-remove-friend')); });
+  });
+  app.querySelectorAll('[data-cheer-open]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var code = el.getAttribute('data-cheer-open');
+      community.sendOpenFor = (community.sendOpenFor===code) ? null : code;
+      render();
+    });
+  });
+  app.querySelectorAll('[data-cheer-send]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var parts = el.getAttribute('data-cheer-send').split('|');
+      sendCheer(parts[0], parts[1]);
+    });
+  });
+
+  bind3DTilt();
+}
+
+/* ---- efeito visual de inclinação 3D (não afeta estado/funcionalidade) ---- */
+function bind3DTilt(){
+  if(window.matchMedia && !window.matchMedia('(hover:hover)').matches) return;
+  app.querySelectorAll('.hero, .skill, .level-card').forEach(function(el){
+    el.addEventListener('mousemove', function(e){
+      var r = el.getBoundingClientRect();
+      var px = (e.clientX - r.left)/r.width - 0.5;
+      var py = (e.clientY - r.top)/r.height - 0.5;
+      var maxTilt = el.classList.contains('skill') ? 7 : 4;
+      el.style.transform = 'perspective(800px) rotateX('+(-py*maxTilt)+'deg) rotateY('+(px*maxTilt)+'deg) translateY(-2px)';
+    });
+    el.addEventListener('mouseleave', function(){ el.style.transform = ''; });
+  });
+}
+function byId(id){ return document.getElementById(id); }
+function bindClick(id, fn){ var el = byId(id); if(el) el.addEventListener('click', fn); }
+function bindEnter(id, fn){ var el = byId(id); if(el) el.addEventListener('keydown', function(e){ if(e.key==='Enter') fn(el.value); }); }
+
+loadState();
+
+})();
+</script>
+</body>
+</html>
